@@ -29,9 +29,45 @@ import {
   Legend 
 } from 'recharts'
 
-export default function FinalReportPage({ onOpenFeedback, onStartNewInterview }) {
+import { useAuth } from '../hooks/useAuth'
+
+export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, interviewStatus }) {
+  const { user } = useAuth()
+  const candidateName = user?.fullName || 'Candidate'
+  const isLocked = interviewStatus === 'NOT_STARTED'
+
+  if (isLocked) {
+    return (
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto text-slate-100 select-none">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-8 sm:p-12 rounded-3xl bg-slate-900/60 border border-indigo-500/30 text-center space-y-5 shadow-2xl"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2 max-w-md mx-auto">
+            <h2 className="text-2xl font-extrabold text-white">Final Report Not Available Yet</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Your final technical scorecard, radar evaluation, hiring verdict, and personalized learning roadmap generate automatically after taking your first AI interview session.
+            </p>
+          </div>
+          <button
+            onClick={onStartNewInterview}
+            className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all inline-flex items-center justify-center gap-2"
+          >
+            <PlayCircle className="w-4 h-4 fill-current" />
+            <span>Start Technical Interview Session</span>
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto text-slate-100">
+
       
       {/* Top Banner & Header */}
       <motion.div 
@@ -49,7 +85,7 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview })
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
-            Staff Level Evaluation: <span className="text-indigo-400">{finalReportData.candidateName}</span>
+            Staff Level Evaluation: <span className="text-indigo-400">{candidateName}</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 font-medium">
             Role Target: {finalReportData.roleEvaluated} • Session ID: #{finalReportData.id}
@@ -142,7 +178,7 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview })
               <Target className="w-5 h-5 text-purple-400" />
               <span>Multi-Dimensional Competency Map</span>
             </h3>
-            <p className="text-xs text-slate-400">{finalReportData.candidateName} vs Staff Engineer Industry Benchmark</p>
+            <p className="text-xs text-slate-400">{candidateName} vs Staff Engineer Industry Benchmark</p>
           </div>
         </div>
 
@@ -152,7 +188,7 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview })
               <PolarGrid stroke="#334155" />
               <PolarAngleAxis dataKey="subject" stroke="#cbd5e1" tick={{ fontSize: 11 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#475569" />
-              <Radar name={`${finalReportData.candidateName} (Candidate)`} dataKey="Candidate" stroke="#818cf8" fill="#6366f1" fillOpacity={0.5} />
+              <Radar name={`${candidateName} (Candidate)`} dataKey="Candidate" stroke="#818cf8" fill="#6366f1" fillOpacity={0.5} />
               <Radar name="Staff Benchmark" dataKey="Benchmark" stroke="#38bdf8" fill="#06b6d4" fillOpacity={0.2} />
               <Legend wrapperStyle={{ fontSize: '12px', pt: '10px' }} />
             </RadarChart>

@@ -1,26 +1,81 @@
-export const candidateProfile = {
-  name: "Demo Candidate",
-  email: "demo.user@neuronai.ai",
-  role: "Senior AI Systems Engineer",
-  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-  streakDays: 7,
-  totalInterviews: 18,
-  prepTimeHours: 42.5,
-  avgConfidence: 86,
-  readinessScore: 92,
-  level: "Level 4 • Staff AI Architect",
-  statusBadge: "Ready for Live Benchmarks",
+// Zero progress initial template for brand new accounts
+export const zeroProgressCandidateProfile = {
+  streakDays: 0,
+  totalInterviews: 0,
+  prepTimeHours: 0,
+  avgConfidence: "—",
+  readinessScore: "—",
+  finalScore: "—",
+  knowledgeMapStatus: "Not Assessed",
+  skillGapStatus: "Not Assessed",
+  level: "Candidate Track",
+  statusBadge: "New Candidate • Benchmarks Pending",
   todayGoal: {
-    title: "Master MCP Error Handling & Circuit Breakers",
-    completed: 2,
-    total: 3,
+    title: "Complete First AI Technical Interview",
+    completed: 0,
+    total: 1,
   },
-  aiRecommendation: "Focus on async event loop backoff and sliding window context.",
-  targetRole: "Staff AI Systems Engineer",
-  targetCompany: "Anthropic / OpenAI / Scale AI",
-  skillsCovered: 24,
+  aiRecommendation: "Launch your first practice session to generate your personalized knowledge map.",
+  targetRole: "AI Systems Engineer",
+  targetCompany: "Top Tech",
+  skillsCovered: 0,
   totalSkills: 30,
 }
+
+// Function to construct dynamic profile from authenticated user & interview state
+export function getDynamicCandidateProfile(user = null, interviewStatus = 'NOT_STARTED') {
+  const isCompleted = interviewStatus === 'COMPLETED'
+
+  const firstName = user?.firstName || (user?.fullName ? user.fullName.split(' ')[0] : '')
+  const lastName = user?.lastName || (user?.fullName ? user.fullName.split(' ').slice(1).join(' ') : '')
+  const fullName = user?.fullName || `${firstName} ${lastName}`.trim() || ''
+
+  const baseUser = {
+    firstName,
+    lastName,
+    name: fullName,
+    fullName,
+    username: user?.username ? (user.username.startsWith('@') ? user.username : `@${user.username}`) : '',
+    email: user?.email || '',
+    role: user?.targetRole || "AI Systems Engineer",
+    avatar: user?.profilePhoto || null,
+  }
+
+  if (!isCompleted) {
+    return {
+      ...baseUser,
+      ...zeroProgressCandidateProfile,
+    }
+  }
+
+  // After interview completion, reveal metrics
+  return {
+    ...baseUser,
+    streakDays: 1,
+    totalInterviews: 1,
+    prepTimeHours: 0.5,
+    avgConfidence: "86%",
+    readinessScore: "92%",
+    finalScore: "92%",
+    knowledgeMapStatus: "Assessed",
+    skillGapStatus: "Assessed",
+    level: "Level 4 • Staff AI Architect",
+    statusBadge: "Verified Benchmark",
+    todayGoal: {
+      title: "Master MCP Error Handling & Circuit Breakers",
+      completed: 1,
+      total: 1,
+    },
+    aiRecommendation: "Focus on async event loop backoff and sliding window context.",
+    targetRole: user?.targetRole || "Staff AI Systems Engineer",
+    targetCompany: "Anthropic / OpenAI / Scale AI",
+    skillsCovered: 24,
+    totalSkills: 30,
+  }
+}
+
+export const candidateProfile = zeroProgressCandidateProfile
+
 
 export const skillHeatmap = [
   { name: "Model Context Protocol (MCP)", level: "Master", score: 94, category: "Protocols" },
@@ -411,13 +466,13 @@ export const initialInterviewSession = {
 
 export const finalReportData = {
   id: "rep-9812",
-  candidateName: "Demo Candidate",
+  candidateName: "Candidate",
   date: "August 08, 2026",
   roleEvaluated: "Senior AI Systems Engineer",
   overallScore: 92,
   matchRating: "Staff Level Ready (Top 3%)",
   hiringRecommendation: "STRONG HIRE (Staff Level Ready)",
-  executiveSummary: "Demo Candidate demonstrated top-tier engineering maturity during the 45-minute autonomous MCP & RAG interview session. Evaluated at 92/100, the candidate exhibited staff-level command over JSON-RPC transports, token isolation, sliding-window context compression, and agentic loop orchestration.",
+  executiveSummary: "The candidate demonstrated top-tier engineering maturity during the 45-minute autonomous MCP & RAG interview session. Evaluated at 92/100, the candidate exhibited staff-level command over JSON-RPC transports, token isolation, sliding-window context compression, and agentic loop orchestration.",
   aiSummary: "Candidate articulated precise architectural primitives for Model Context Protocol. Identified key security boundary requirements when binding host endpoints to LLM runtime engines. Commendable clarity in prompt guardrails and zero-shot reasoning loops.",
   scores: {
     technicalScore: 94,

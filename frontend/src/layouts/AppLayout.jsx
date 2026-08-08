@@ -9,11 +9,16 @@ import SkillGapPage from '../pages/SkillGapPage'
 import KnowledgeMapPage from '../pages/KnowledgeMapPage'
 import ReportsPage from '../pages/ReportsPage'
 import HistoryPage from '../pages/HistoryPage'
+import AuthPage from '../pages/auth/AuthPage'
 import FeedbackModal from '../components/FeedbackModal'
+import { AuthProvider } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useInterview } from '../hooks/useInterview'
+import { Cpu } from 'lucide-react'
 
-export default function AppLayout() {
-  const [activeTab, setActiveTab] = useState('landing')
+function AppLayoutContent() {
+  const { isAuthenticated, isLoading, authStep } = useAuth()
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
   // Central interview session hook
@@ -30,6 +35,29 @@ export default function AppLayout() {
     setActiveTab('report-details')
   }
 
+  // 1. Initial Auth Loading Spinner State
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center select-none">
+        <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-[1px] shadow-[0_0_30px_rgba(99,102,241,0.6)] mb-4 animate-bounce">
+          <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
+            <Cpu className="w-8 h-8 text-indigo-400 animate-pulse" />
+          </div>
+        </div>
+        <h2 className="font-bold text-lg text-white mb-1">NeuronAI</h2>
+        <p className="text-xs text-slate-400 font-mono animate-pulse">Initializing Secure AI Telemetry...</p>
+      </div>
+    )
+  }
+
+  // 2. Strict Unauthenticated Route Protection Guard
+  const isAuthScreen = !isAuthenticated || authStep !== 'DASHBOARD'
+
+  if (isAuthScreen) {
+    return <AuthPage />
+  }
+
+  // 3. Authenticated App Layout
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       
@@ -94,6 +122,7 @@ export default function AppLayout() {
               <FinalReportPage 
                 onOpenFeedback={() => setIsFeedbackOpen(true)}
                 onStartNewInterview={handleStartInterviewAction}
+                interviewStatus={interviewStatus}
               />
             )}
 
@@ -115,6 +144,7 @@ export default function AppLayout() {
               <HistoryPage 
                 onViewReport={() => setActiveTab('report-details')}
                 onStartInterview={handleStartInterviewAction}
+                interviewStatus={interviewStatus}
               />
             )}
           </main>
@@ -129,5 +159,13 @@ export default function AppLayout() {
       />
 
     </div>
+  )
+}
+
+export default function AppLayout() {
+  return (
+    <AuthProvider>
+      <AppLayoutContent />
+    </AuthProvider>
   )
 }

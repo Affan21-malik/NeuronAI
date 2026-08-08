@@ -13,9 +13,13 @@ import {
   FileText
 } from 'lucide-react'
 
-export default function HistoryPage({ onViewReport, onStartInterview }) {
+import { Lock } from 'lucide-react'
+
+export default function HistoryPage({ onViewReport, onStartInterview, interviewStatus }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState('All')
+  const isLocked = interviewStatus === 'NOT_STARTED'
+
 
   const filteredHistory = interviewHistoryData.filter((item) => {
     const matchesSearch = item.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,29 +67,48 @@ export default function HistoryPage({ onViewReport, onStartInterview }) {
         
         <div className="p-5 rounded-3xl bg-slate-900/60 border border-indigo-500/20 space-y-2">
           <span className="text-xs text-slate-400 font-bold block uppercase">Total Completed</span>
-          <span className="text-3xl font-black text-indigo-400 font-mono">18</span>
-          <span className="text-[10px] text-slate-400 block font-medium">Over last 30 days</span>
+          <span className="text-3xl font-black text-indigo-400 font-mono">{isLocked ? '0' : '1'}</span>
+          <span className="text-[10px] text-slate-400 block font-medium">{isLocked ? 'Start first session' : 'Over last 30 days'}</span>
         </div>
 
         <div className="p-5 rounded-3xl bg-slate-900/60 border border-indigo-500/20 space-y-2">
           <span className="text-xs text-slate-400 font-bold block uppercase">Total Practice Time</span>
-          <span className="text-3xl font-black text-purple-400 font-mono">42.5 hrs</span>
-          <span className="text-[10px] text-emerald-400 block font-semibold">+6.2 hrs this week</span>
+          <span className="text-3xl font-black text-purple-400 font-mono">{isLocked ? '0 hrs' : '0.5 hrs'}</span>
+          <span className="text-[10px] text-slate-400 block font-semibold">{isLocked ? 'Pending evaluation' : 'Active session'}</span>
         </div>
 
         <div className="p-5 rounded-3xl bg-slate-900/60 border border-indigo-500/20 space-y-2">
           <span className="text-xs text-slate-400 font-bold block uppercase">Average Score</span>
-          <span className="text-3xl font-black text-emerald-400 font-mono">88.5/100</span>
-          <span className="text-[10px] text-emerald-400 block font-semibold">+3.5% improvement</span>
+          <span className="text-3xl font-black text-emerald-400 font-mono">{isLocked ? '—' : '92/100'}</span>
+          <span className="text-[10px] text-slate-400 block font-semibold">{isLocked ? 'Not Assessed' : '+3.5% improvement'}</span>
         </div>
 
         <div className="p-5 rounded-3xl bg-slate-900/60 border border-indigo-500/20 space-y-2">
-          <span className="text-xs text-slate-400 font-bold block uppercase">Highest Level Target</span>
-          <span className="text-xl font-extrabold text-amber-300 truncate block">Staff AI Architect</span>
-          <span className="text-[10px] text-amber-400 font-semibold block">Hard Adaptive Scaling</span>
+          <span className="text-xs text-slate-400 font-bold block uppercase">Target Track</span>
+          <span className="text-xl font-extrabold text-amber-300 truncate block">AI Systems Engineer</span>
+          <span className="text-[10px] text-amber-400 font-semibold block">Adaptive Probing</span>
         </div>
 
       </div>
+
+      {isLocked && (
+        <div className="p-8 rounded-3xl bg-slate-900/40 border border-indigo-500/20 text-center space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400">
+            <Clock className="w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-bold text-white">No Interview Sessions Archived Yet</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Your session history, conversation logs, time durations, and question evaluations will be archived here after taking your first AI interview.
+          </p>
+          <button
+            onClick={onStartInterview}
+            className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition-all shadow-md inline-flex items-center gap-2"
+          >
+            <PlayCircle className="w-4 h-4 fill-current" />
+            <span>Start Practice Session</span>
+          </button>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border border-indigo-500/20">

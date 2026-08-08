@@ -35,8 +35,11 @@ import {
 } from 'recharts'
 import CodeChallengeModal from '../components/CodeChallengeModal'
 import { memoryTimeline, aiReasoningLogs } from '../data/mockData'
+import { useAuth } from '../hooks/useAuth'
 
 export default function InterviewPage({ interviewHook, onEndInterview }) {
+  const { user } = useAuth()
+  const candidateName = user?.fullName || 'Candidate'
   const {
     session,
     messages,
@@ -221,7 +224,7 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                     {/* Sender Header */}
                     <div className={`flex items-center gap-2 text-xs font-semibold ${isAi ? '' : 'justify-end'}`}>
                       <span className={isAi ? 'text-indigo-400' : 'text-slate-300'}>
-                        {isAi ? 'AI Interviewer' : 'You (Demo Candidate)'}
+                        {isAi ? 'AI Interviewer' : `You (${candidateName})`}
                       </span>
 
                       {/* Follow-up Indicator / Question Badge */}

@@ -5,17 +5,16 @@ import {
   LayoutDashboard, 
   PlayCircle, 
   BarChart3, 
-  Clock, 
   Bell, 
   Moon, 
   Sun, 
   Activity,
-  CheckCircle2,
-  Lock,
-  Zap,
-  RotateCcw
+  LogOut,
+  User as UserIcon,
+  ChevronDown
 } from 'lucide-react'
-import { candidateProfile } from '../data/mockData'
+import { useAuth } from '../hooks/useAuth'
+import DefaultAvatar from './DefaultAvatar'
 
 export default function Navbar({ 
   activeTab, 
@@ -26,14 +25,20 @@ export default function Navbar({
   onCompleteInterview,
   onResetInterview 
 }) {
+  const { user, logout } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const [isHighContrast, setIsHighContrast] = useState(false)
 
   const notifications = [
     { id: 1, title: 'AI Probing Update', desc: 'NeuronAI elevated follow-up difficulty to Staff level.', time: '2m ago' },
-    { id: 2, title: 'Resume Parsed', desc: 'Verified 24 technical primitives for Senior AI Engineer.', time: '1h ago' },
-    { id: 3, title: 'Session Ready', desc: 'MCP Architecture Practice Session is ready for launch.', time: 'Just now' },
+    { id: 2, title: 'Session Ready', desc: 'Technical Practice Session is ready for launch.', time: 'Just now' },
   ]
+
+  const userName = user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || ''
+  const userEmail = user?.email || ''
+  const userUsername = user?.username ? (user.username.startsWith('@') ? user.username : `@${user.username}`) : ''
+  const userRole = user?.targetRole || 'AI Systems Engineer'
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-slate-950/80 border-b border-indigo-500/20 px-4 lg:px-8 py-3 transition-all select-none">
@@ -116,7 +121,7 @@ export default function Navbar({
         {/* Header Control Cluster */}
         <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* Quick Lifecycle Stage Toggle for Demo/Testing */}
+          {/* Quick Lifecycle Stage Toggle for Testing */}
           <div className="hidden xl:flex items-center gap-1 p-1 bg-slate-900 rounded-xl border border-indigo-500/20 text-[10px] font-bold">
             <button
               onClick={onResetInterview}
@@ -125,7 +130,7 @@ export default function Navbar({
               }`}
               title="Set to Before Interview mode"
             >
-              1. Before Interview
+              1. Before
             </button>
             <button
               onClick={onStartInterview}
@@ -134,7 +139,7 @@ export default function Navbar({
               }`}
               title="Set to During Interview mode"
             >
-              2. During Interview
+              2. During
             </button>
             <button
               onClick={onCompleteInterview}
@@ -143,7 +148,7 @@ export default function Navbar({
               }`}
               title="Set to After Interview mode"
             >
-              3. After Interview
+              3. After
             </button>
           </div>
 
@@ -166,7 +171,10 @@ export default function Navbar({
           {/* Notification Icon */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                setShowNotifications(!showNotifications)
+                setShowUserMenu(false)
+              }}
               className="relative p-2 rounded-xl bg-slate-900 border border-indigo-500/20 text-slate-400 hover:text-white hover:border-indigo-500/50 transition-all"
             >
               <Bell className="w-4 h-4" />
@@ -181,7 +189,7 @@ export default function Navbar({
                     <Bell className="w-3.5 h-3.5 text-purple-400" />
                     AI Agent Alerts
                   </span>
-                  <span className="text-[10px] text-indigo-300 font-mono">3 New</span>
+                  <span className="text-[10px] text-indigo-300 font-mono">2 New</span>
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -199,20 +207,75 @@ export default function Navbar({
             )}
           </div>
 
-          {/* Candidate Profile Pill */}
-          <div 
-            onClick={() => setActiveTab('dashboard')}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-slate-900 border border-indigo-500/25 hover:border-indigo-500/50 cursor-pointer transition-all shadow-sm"
-          >
-            <img 
-              src={candidateProfile.avatar} 
-              alt={candidateProfile.name}
-              className="w-7 h-7 rounded-xl object-cover ring-2 ring-indigo-500/40"
-            />
-            <div className="hidden sm:block text-left pr-1">
-              <span className="text-xs font-bold text-white block leading-tight">{candidateProfile.name}</span>
-              <span className="text-[10px] text-slate-400 font-medium block">Staff Track</span>
+          {/* Dynamic Candidate Profile Dropdown */}
+          <div className="relative">
+            <div 
+              onClick={() => {
+                setShowUserMenu(!showUserMenu)
+                setShowNotifications(false)
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-slate-900 border border-indigo-500/25 hover:border-indigo-500/50 cursor-pointer transition-all shadow-sm group"
+            >
+              <DefaultAvatar 
+                src={user?.profilePhoto} 
+                name={userName} 
+                firstName={user?.firstName}
+                lastName={user?.lastName}
+                className="w-7 h-7" 
+                ring={false}
+              />
+              <div className="hidden sm:block text-left pr-1">
+                <span className="text-xs font-bold text-white block leading-tight truncate max-w-[110px]">{userName}</span>
+                <span className="text-[10px] text-slate-400 font-medium block truncate max-w-[110px]">{userUsername}</span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
             </div>
+
+            {/* Profile Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-indigo-500/30 p-3 shadow-2xl z-50 space-y-3">
+                <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-950/80 border border-indigo-500/15">
+                  <DefaultAvatar 
+                    src={user?.profilePhoto} 
+                    name={userName} 
+                    firstName={user?.firstName}
+                    lastName={user?.lastName}
+                    className="w-9 h-9"
+                  />
+                  <div className="truncate">
+                    <h4 className="text-xs font-bold text-white truncate">{userName}</h4>
+                    <p className="text-[10px] text-slate-400 truncate">{userEmail}</p>
+                    <span className="inline-block mt-0.5 text-[9px] font-mono text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded">
+                      {userRole}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setActiveTab('dashboard')
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
+                  >
+                    <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>View Profile & Dashboard</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      logout()
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors font-medium"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Feedback Button */}
