@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react'
 import { initialInterviewSession } from '../data/mockData'
 
-<<<<<<< HEAD
-export function useInterview() {
-  const [interviewStatus, setInterviewStatus] = useState('NOT_STARTED') // 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
-  const [session, setSession] = useState(initialInterviewSession)
-  const [messages, setMessages] = useState(initialInterviewSession.messages)
-  const [isAiThinking, setIsAiThinking] = useState(false)
-  const [timerSeconds, setTimerSeconds] = useState(0)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
-=======
 const INTERVIEW_STORAGE_KEY = 'neuron_ai_interview_state'
 
 function loadSavedInterviewState() {
@@ -40,15 +31,10 @@ export function useInterview() {
   const [isAiThinking, setIsAiThinking] = useState(false)
   const [timerSeconds, setTimerSeconds] = useState(() => saved?.timerSeconds || 0)
   const [isTimerRunning, setIsTimerRunning] = useState(() => saved?.interviewStatus === 'IN_PROGRESS')
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   const [inputMessage, setInputMessage] = useState('')
   const [isRecordingVoice, setIsRecordingVoice] = useState(false)
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false)
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
-<<<<<<< HEAD
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(1)
-  const [confidenceScore, setConfidenceScore] = useState(72)
-=======
   const [confidenceScore, setConfidenceScore] = useState(() => saved?.confidenceScore || 72)
   // Per-question scores — only populated as questions are actually answered.
   // Each entry: { question: 'Q1', score: 78 }
@@ -88,7 +74,6 @@ export function useInterview() {
       localStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify(stateToSave))
     } catch (e) {}
   }, [interviewStatus, activeQuestionNumber, timerSeconds, confidenceScore, messages, selectedAgent, questionScores])
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 
   // Timer interval
   useEffect(() => {
@@ -108,29 +93,6 @@ export function useInterview() {
     return `${hrs > 0 ? String(hrs).padStart(2, '0') + ':' : ''}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-<<<<<<< HEAD
-  const startInterview = () => {
-    setInterviewStatus('IN_PROGRESS')
-    setIsTimerRunning(true)
-    if (timerSeconds === 0) {
-      setTimerSeconds(1122) // 18m 42s live simulation baseline
-      setCurrentQuestionIndex(4)
-      setConfidenceScore(86)
-    }
-  }
-
-  const completeInterview = () => {
-    setInterviewStatus('COMPLETED')
-    setIsTimerRunning(false)
-  }
-
-  const resetInterview = () => {
-    setInterviewStatus('NOT_STARTED')
-    setIsTimerRunning(false)
-    setTimerSeconds(0)
-    setCurrentQuestionIndex(1)
-    setConfidenceScore(72)
-=======
   const startInterview = (agent = null) => {
     const agentToUse = agent || selectedAgent || { id: 'jarvis', name: 'JARVIS', tagline: 'Precision & Technical Correctness' }
     setSelectedAgent(agentToUse)
@@ -177,22 +139,18 @@ export function useInterview() {
     try {
       localStorage.removeItem(INTERVIEW_STORAGE_KEY)
     } catch (e) {}
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   }
 
   const handleSendMessage = (customText = null) => {
     const textToSend = customText || inputMessage
     if (!textToSend.trim()) return
 
-<<<<<<< HEAD
-=======
     // Auto-activate interview if first message is sent
     if (interviewStatus === 'NOT_STARTED' || currentQuestionIndex === 0) {
       setRawStatus('IN_PROGRESS')
       setIsTimerRunning(true)
     }
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     const now = new Date()
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
@@ -207,16 +165,6 @@ export function useInterview() {
     setInputMessage('')
     setIsAiThinking(true)
 
-<<<<<<< HEAD
-    // Simulate AI thinking and dynamic follow-up generation
-    setTimeout(() => {
-      setIsAiThinking(false)
-      
-      const isNextFollowUp = Math.random() > 0.3
-      const nextIndex = Math.min(currentQuestionIndex + (isNextFollowUp ? 0 : 1), 10)
-      setCurrentQuestionIndex(nextIndex)
-
-=======
     // Simulate AI thinking and question progression
     setTimeout(() => {
       setIsAiThinking(false)
@@ -249,7 +197,6 @@ export function useInterview() {
       }
 
       setCurrentQuestionIndex(nextIndex)
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       const newConfidence = Math.min(98, Math.max(60, confidenceScore + Math.floor(Math.random() * 5) - 1))
       setConfidenceScore(newConfidence)
 
@@ -257,32 +204,19 @@ export function useInterview() {
         Math.floor(Math.random() * session.nextSimulatedQuestions.length)
       ]
 
-<<<<<<< HEAD
-=======
       const activeAgentName = selectedAgent?.name || 'JARVIS'
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       const aiMsg = {
         id: `msg-ai-${Date.now()}`,
         sender: 'ai',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-<<<<<<< HEAD
-        content: `Great response on context isolation! Let me evaluate your implementation depth.\n\n${nextQuestionObj.question}`,
-        badge: isNextFollowUp ? "Follow-up Question" : `Question ${nextIndex}/10`,
-        followUp: isNextFollowUp,
-=======
         content: `[${activeAgentName}] Evaluated response depth.\n\n${nextQuestionObj.question}`,
         badge: `Question ${nextIndex}/10 • ${activeAgentName}`,
         followUp: false,
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       }
 
       setMessages((prev) => [...prev, aiMsg])
 
-<<<<<<< HEAD
-      // Update session progress
-=======
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       setSession((prev) => ({
         ...prev,
         confidenceScore: newConfidence,
@@ -290,25 +224,14 @@ export function useInterview() {
         insights: {
           ...prev.insights,
           questionsAsked: prev.insights.questionsAsked + 1,
-<<<<<<< HEAD
-          followUps: prev.insights.followUps + (isNextFollowUp ? 1 : 0)
-        }
-      }))
-    }, 2200)
-=======
         }
       }))
     }, 1800)
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   }
 
   const toggleVoiceRecording = () => {
     if (isRecordingVoice) {
       setIsRecordingVoice(false)
-<<<<<<< HEAD
-      // Simulate transcribed text
-=======
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       setInputMessage("MCP implements strict token authentication with JSON-RPC payloads over TLS or stdin streams...")
     } else {
       setIsRecordingVoice(true)
@@ -317,9 +240,6 @@ export function useInterview() {
 
   return {
     interviewStatus,
-<<<<<<< HEAD
-    setInterviewStatus,
-=======
     selectedAgent,
     setSelectedAgent,
     setInterviewStatus: (status) => {
@@ -332,7 +252,6 @@ export function useInterview() {
         setCurrentQuestionIndex(0)
       }
     },
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     startInterview,
     completeInterview,
     resetInterview,
@@ -349,13 +268,8 @@ export function useInterview() {
     setIsCodeModalOpen,
     isFeedbackModalOpen,
     setIsFeedbackModalOpen,
-<<<<<<< HEAD
-    currentQuestionIndex,
-    confidenceScore,
-=======
     currentQuestionIndex: activeQuestionNumber,
     confidenceScore,
     questionScores,
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   }
 }

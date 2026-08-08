@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React from 'react'
-=======
 import React, { useState } from 'react'
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 import { motion } from 'framer-motion'
 import { 
   getDynamicCandidateProfile,
@@ -28,12 +24,8 @@ import {
   ShieldCheck,
   Zap,
   Lock,
-<<<<<<< HEAD
-  Radar
-=======
   Radar,
   Pencil
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 } from 'lucide-react'
 import { 
   ResponsiveContainer, 
@@ -47,10 +39,7 @@ import {
 } from 'recharts'
 import { useAuth } from '../hooks/useAuth'
 import DefaultAvatar from '../components/DefaultAvatar'
-<<<<<<< HEAD
-=======
 import EditProfileModal from '../components/EditProfileModal'
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 
 export default function DashboardPage({ 
   interviewStatus, 
@@ -63,8 +52,6 @@ export default function DashboardPage({
   const candidate = getDynamicCandidateProfile(user, interviewStatus)
   const isCompleted = interviewStatus === 'COMPLETED'
 
-<<<<<<< HEAD
-=======
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editModalTab, setEditModalTab] = useState('name')
 
@@ -73,7 +60,6 @@ export default function DashboardPage({
     setEditModalOpen(true)
   }
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto select-none">
       
@@ -129,13 +115,6 @@ export default function DashboardPage({
             </div>
 
             <div>
-<<<<<<< HEAD
-              <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white">{candidate.name}</h2>
-                <span className="text-xs font-mono text-indigo-400 font-semibold px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
-                  {candidate.username}
-                </span>
-=======
               {/* Requirement 2: User Name & Username with pencil edit controls */}
               <div className="flex flex-wrap items-center gap-3 mb-1">
                 <div className="flex items-center gap-1.5">
@@ -162,7 +141,6 @@ export default function DashboardPage({
                   </button>
                 </div>
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
                   <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                   {candidate.streakDays} Day Streak
@@ -525,10 +503,6 @@ export default function DashboardPage({
                   <Sliders className="w-5 h-5 text-purple-400" />
                   <h3 className="text-base font-bold text-white group-hover:text-purple-400 transition-colors">Skill Gap Analysis</h3>
                 </div>
-<<<<<<< HEAD
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-=======
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
               </div>
               <p className="text-xs text-slate-400">
                 Pinpoint high-priority weak topics and access recommended targeted practice modules.
@@ -540,8 +514,6 @@ export default function DashboardPage({
         </div>
       )}
 
-<<<<<<< HEAD
-=======
 
       {/* Edit Profile Info Modal */}
       <EditProfileModal 
@@ -550,7 +522,6 @@ export default function DashboardPage({
         initialTab={editModalTab} 
       />
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     </div>
   )
 }

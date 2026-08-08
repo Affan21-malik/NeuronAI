@@ -7,8 +7,6 @@
     color-scheme: dark;
   }
 
-<<<<<<< HEAD
-=======
   /* Hide default native browser mouse cursor globally so ONLY NeuronAI custom cursor is visible */
   html,
   body,
@@ -18,7 +16,6 @@
     cursor: none !important;
   }
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   body {
     margin: 0;
     padding: 0;
@@ -140,8 +137,6 @@
 .animate-pulse-glow {
   animation: pulseGlow 3s ease-in-out infinite;
 }
-<<<<<<< HEAD
-=======
 
 /* Light Mode Theme Overrides */
 html.light,
@@ -281,4 +276,3 @@ html.light .bg-grid-pattern {
 }
 
 
->>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
