@@ -47,9 +47,9 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
             </div>
           </div>
           <div>
-            <h1 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
-              Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-indigo-400">AI</span>
-            </h1>
+            <h1 className="font-extrabold text-lg text-white tracking-tight">
+  Neuron<span className="bg-gradient-to-r from-indigo-400 to-pink-500 bg-clip-text text-transparent">AI</span>
+</h1>
             <p className="text-[10px] text-slate-400 font-medium">AI Interview Agent OS</p>
           </div>
         </div>
