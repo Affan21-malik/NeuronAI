@@ -170,11 +170,11 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
           </div>
 
           <button
-            onClick={() => setActiveTab('interview')}
+            onClick={onStartNewInterview}
             className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95"
           >
             <Zap className="w-3.5 h-3.5 text-amber-300" />
-            <span>{interviewStatus === 'IN_PROGRESS' ? 'Continue Interview' : 'Start Interview'}</span>
+            <span>Start New Interview</span>
           </button>
         </div>
 

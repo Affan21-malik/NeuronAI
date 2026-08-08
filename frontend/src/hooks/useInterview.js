@@ -7,7 +7,14 @@ function loadSavedInterviewState() {
   try {
     const raw = localStorage.getItem(INTERVIEW_STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    // Only restore selectedAgent when there is an active IN_PROGRESS session.
+    // For NOT_STARTED / COMPLETED sessions the agent belongs to that finished
+    // session and must NOT carry over — the user must choose again.
+    if (parsed.interviewStatus !== 'IN_PROGRESS') {
+      parsed.selectedAgent = null
+    }
+    return parsed
   } catch (e) {
     return null
   }
@@ -29,6 +36,9 @@ export function useInterview() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false)
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
   const [confidenceScore, setConfidenceScore] = useState(() => saved?.confidenceScore || 72)
+  // Per-question scores — only populated as questions are actually answered.
+  // Each entry: { question: 'Q1', score: 78 }
+  const [questionScores, setQuestionScores] = useState(() => saved?.questionScores || [])
 
   // Single Source of Truth Derived Lifecycle State:
   // - NOT_STARTED (1. Before): When interview has not started and question count is 0
@@ -59,10 +69,11 @@ export function useInterview() {
         confidenceScore,
         messages,
         selectedAgent,
+        questionScores,
       }
       localStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify(stateToSave))
     } catch (e) {}
-  }, [interviewStatus, activeQuestionNumber, timerSeconds, confidenceScore, messages, selectedAgent])
+  }, [interviewStatus, activeQuestionNumber, timerSeconds, confidenceScore, messages, selectedAgent, questionScores])
 
   // Timer interval
   useEffect(() => {
@@ -90,6 +101,7 @@ export function useInterview() {
     setTimerSeconds(0)
     setCurrentQuestionIndex(1)
     setConfidenceScore(72)
+    setQuestionScores([])  // clear per-question scores for fresh session
 
     const initialMsg = {
       id: `msg-ai-init`,
@@ -110,6 +122,9 @@ export function useInterview() {
     setRawStatus('COMPLETED')
     setIsTimerRunning(false)
     setCurrentQuestionIndex(10)
+    // Clear agent from state so agent selection shows for the NEXT interview.
+    // The completed session's agent is already embedded in the messages/report.
+    setSelectedAgent(null)
   }
 
   const resetInterview = () => {
@@ -119,6 +134,7 @@ export function useInterview() {
     setCurrentQuestionIndex(0)
     setConfidenceScore(72)
     setSelectedAgent(null)
+    setQuestionScores([])
     setMessages(initialInterviewSession.messages)
     try {
       localStorage.removeItem(INTERVIEW_STORAGE_KEY)
@@ -156,6 +172,14 @@ export function useInterview() {
       const current = currentQuestionIndex === 0 ? 1 : currentQuestionIndex
       const nextIndex = current + 1
       const isCompletedNow = nextIndex > 10
+
+      // Record score for the question that was just answered (current)
+      const answeredScore = Math.min(98, Math.max(62, confidenceScore + Math.floor(Math.random() * 14) - 4))
+      setQuestionScores((prev) => {
+        // Avoid duplicate entry if question already scored (edge case)
+        if (prev.find((p) => p.question === `Q${current}`)) return prev
+        return [...prev, { question: `Q${current}`, score: answeredScore }]
+      })
 
       if (isCompletedNow) {
         setCurrentQuestionIndex(10)
@@ -246,5 +270,6 @@ export function useInterview() {
     setIsFeedbackModalOpen,
     currentQuestionIndex: activeQuestionNumber,
     confidenceScore,
+    questionScores,
   }
 }

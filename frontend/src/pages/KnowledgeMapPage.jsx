@@ -14,19 +14,19 @@ import {
   Lock,
   PlayCircle
 } from 'lucide-react'
-import { 
-  ResponsiveContainer, 
-  RadarChart, 
-  PolarGrid, 
-  PolarAngleAxis, 
-  PolarRadiusAxis, 
-  Radar as RechartsRadar, 
-  Legend,
-  Tooltip
-} from 'recharts'
+import DraggableRadarChart from '../components/DraggableRadarChart'
 
 export default function KnowledgeMapPage({ interviewStatus, onStartInterview }) {
   const isLocked = interviewStatus === 'NOT_STARTED'
+
+  // Interactive radar axes — state-driven so dragging updates the polygon live
+  const [radarAxes, setRadarAxes] = useState(() =>
+    knowledgeMapData.radarData.map((d) => ({
+      key: d.subject,
+      score: d.Score,
+      target: d.Target,
+    }))
+  )
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto text-slate-100 select-none">
@@ -127,17 +127,7 @@ export default function KnowledgeMapPage({ interviewStatus, onStartInterview }) 
               </div>
 
               <div className="h-80 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={knowledgeMapData.radarData}>
-                    <PolarGrid stroke="#334155" />
-                    <PolarAngleAxis dataKey="subject" stroke="#cbd5e1" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#475569" />
-                    <RechartsRadar name="Candidate Score" dataKey="Score" stroke="#818cf8" fill="#6366f1" fillOpacity={0.5} />
-                    <RechartsRadar name="Target Benchmark" dataKey="Target" stroke="#38bdf8" fill="#06b6d4" fillOpacity={0.2} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#6366f1', borderRadius: '12px', fontSize: '11px' }} />
-                    <Legend wrapperStyle={{ fontSize: '12px', pt: '10px' }} />
-                  </RadarChart>
-                </ResponsiveContainer>
+                <DraggableRadarChart axes={radarAxes} onChange={setRadarAxes} />
               </div>
             </motion.div>
 

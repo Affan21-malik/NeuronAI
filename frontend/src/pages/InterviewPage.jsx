@@ -58,6 +58,7 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
     setIsCodeModalOpen,
     currentQuestionIndex,
     confidenceScore,
+    questionScores,
   } = interviewHook
 
   const [showReasoning, setShowReasoning] = useState(true)
@@ -483,7 +484,7 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
 
           <div className="h-32 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={session.progressData}>
+              <LineChart data={questionScores}>
                 <XAxis dataKey="question" stroke="#64748b" tick={{ fontSize: 10 }} />
                 <YAxis domain={[50, 100]} stroke="#64748b" hide />
                 <Tooltip 
@@ -494,7 +495,8 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                   dataKey="score" 
                   stroke="#818cf8" 
                   strokeWidth={2.5} 
-                  dot={{ fill: '#6366f1', r: 4 }} 
+                  dot={{ fill: '#6366f1', r: 4 }}
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>

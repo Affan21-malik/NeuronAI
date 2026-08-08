@@ -142,7 +142,7 @@ export default function Navbar({
             </button>
 
             <button
-              onClick={() => setActiveTab('interview')}
+              onClick={onStartInterview}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === 'interview'
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
