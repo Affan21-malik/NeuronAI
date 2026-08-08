@@ -143,19 +143,24 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Handle Google Auth
-  const loginWithGoogle = async () => {
+  // Handle Google Auth Integration Point
+  const continueWithGoogle = async () => {
     clearMessages()
     try {
       setIsLoading(true)
-      const res = await authService.googleAuth()
-      setUser(res.user)
-      setIsAuthenticated(true)
-      setSuccessMessage(res.message)
-      if (!res.user.hasCompletedOnboarding) {
-        setAuthStep('WELCOME')
+      const res = await authService.continueWithGoogle()
+      if (res?.success && res?.user) {
+        setUser(res.user)
+        setIsAuthenticated(true)
+        setSuccessMessage(res.message)
+        if (!res.user.hasCompletedOnboarding) {
+          setAuthStep('WELCOME')
+        }
+        return res
+      } else {
+        setError(res?.message || 'Google Sign-In requires backend OAuth configuration.')
+        return res
       }
-      return res
     } catch (err) {
       setError(err.message || 'Google authentication failed.')
       throw err
@@ -163,6 +168,8 @@ export function AuthProvider({ children }) {
       setIsLoading(false)
     }
   }
+
+  const loginWithGoogle = continueWithGoogle
 
   // Forgot Password Step 1
   const requestForgotPassword = async (email) => {
@@ -259,6 +266,7 @@ export function AuthProvider({ children }) {
     submitProfileSetup,
     finishOnboarding,
     loginWithGoogle,
+    continueWithGoogle,
     requestForgotPassword,
     verifyForgotPasswordOtp,
     submitNewPassword,

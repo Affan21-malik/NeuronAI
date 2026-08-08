@@ -50,6 +50,7 @@ export default function AuthPage() {
     submitProfileSetup, 
     finishOnboarding,
     loginWithGoogle, 
+    continueWithGoogle, 
     requestForgotPassword, 
     verifyForgotPasswordOtp, 
     submitNewPassword,
@@ -539,7 +540,7 @@ export default function AuthPage() {
 
                   <button
                     type="button"
-                    onClick={loginWithGoogle}
+                    onClick={continueWithGoogle}
                     disabled={isLoading}
                     className="w-full py-2.5 px-4 rounded-xl bg-slate-950/90 hover:bg-slate-800/80 border border-slate-800 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-2.5 hover:border-slate-700"
                   >
@@ -797,7 +798,7 @@ export default function AuthPage() {
 
                   <button
                     type="button"
-                    onClick={loginWithGoogle}
+                    onClick={continueWithGoogle}
                     disabled={isLoading}
                     className="w-full py-2.5 px-4 rounded-xl bg-slate-950/90 hover:bg-slate-800/80 border border-slate-800 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-2.5 hover:border-slate-700"
                   >

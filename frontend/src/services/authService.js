@@ -386,34 +386,35 @@ export const authService = {
   },
 
   /**
-   * Continue with Google (Mock Frontend Integration)
+   * Continue with Google OAuth Integration Point.
+   * 
+   * TODO: Backend Developer - Connect Real Google OAuth Flow Here:
+   * 
+   * Flow Sequence:
+   * 1. User clicks "Continue with Google"
+   * 2. Initiate Real Google OAuth (e.g., redirect to window.location.href = '/api/auth/google' or Google OAuth popup/SDK)
+   * 3. User selects their actual Google account in Google's real account chooser
+   * 4. Backend verifies Google OAuth identity token / auth code
+   * 5. Backend returns authenticated user payload (real name, email, profile photo) & session token
+   * 6. Frontend receives authenticated user and proceeds to Dashboard
    */
-  async googleAuth() {
-    await delay(600)
+  async continueWithGoogle() {
+    await delay(300)
 
-    const randomId = Math.floor(1000 + Math.random() * 9000)
-    const googleUser = {
-      id: `usr-google-${Date.now()}`,
-      firstName: 'Google',
-      lastName: 'User',
-      fullName: 'Google User',
-      email: `user${randomId}@gmail.com`,
-      username: `google_user_${randomId}`,
-      profilePhoto: null,
-      targetRole: 'AI Systems Engineer',
-      createdAt: new Date().toISOString(),
-      isNewUser: true,
-      hasCompletedOnboarding: false,
-    }
-
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(googleUser))
-    localStorage.setItem(STORAGE_KEYS.SESSION, `session_google_${Date.now()}`)
+    // Backend Google OAuth endpoint is not connected yet.
+    // Clean entry point ready for backend developer wiring.
+    console.info('[AuthService] continueWithGoogle invoked. Backend Google OAuth integration pending.')
 
     return {
-      success: true,
-      user: googleUser,
-      message: 'Signed in with Google successfully.',
+      success: false,
+      requiresBackendOAuth: true,
+      message: 'Google Sign-In will be available once backend OAuth is connected.',
     }
+  },
+
+  // Alias for backward compatibility
+  async googleAuth() {
+    return this.continueWithGoogle()
   },
 
   /**
