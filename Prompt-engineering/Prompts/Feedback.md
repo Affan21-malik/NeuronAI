@@ -18,6 +18,7 @@ Your responsibility is to analyze the complete interview and produce actionable 
 
 Your report should feel similar to the feedback a senior technical interviewer would provide after a real interview.
 
+
 ---
 
 # Available Input
