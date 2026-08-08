@@ -14,6 +14,7 @@ import {
   Lock,
   PlayCircle
 } from 'lucide-react'
+<<<<<<< HEAD
 import { 
   ResponsiveContainer, 
   RadarChart, 
@@ -24,10 +25,25 @@ import {
   Legend,
   Tooltip
 } from 'recharts'
+=======
+import DraggableRadarChart from '../components/DraggableRadarChart'
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 
 export default function KnowledgeMapPage({ interviewStatus, onStartInterview }) {
   const isLocked = interviewStatus === 'NOT_STARTED'
 
+<<<<<<< HEAD
+=======
+  // Interactive radar axes — state-driven so dragging updates the polygon live
+  const [radarAxes, setRadarAxes] = useState(() =>
+    knowledgeMapData.radarData.map((d) => ({
+      key: d.subject,
+      score: d.Score,
+      target: d.Target,
+    }))
+  )
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto text-slate-100 select-none">
       
@@ -127,6 +143,7 @@ export default function KnowledgeMapPage({ interviewStatus, onStartInterview }) 
               </div>
 
               <div className="h-80 w-full pt-2">
+<<<<<<< HEAD
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={knowledgeMapData.radarData}>
                     <PolarGrid stroke="#334155" />
@@ -138,6 +155,9 @@ export default function KnowledgeMapPage({ interviewStatus, onStartInterview }) 
                     <Legend wrapperStyle={{ fontSize: '12px', pt: '10px' }} />
                   </RadarChart>
                 </ResponsiveContainer>
+=======
+                <DraggableRadarChart axes={radarAxes} onChange={setRadarAxes} />
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
               </div>
             </motion.div>
 

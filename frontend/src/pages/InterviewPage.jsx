@@ -34,6 +34,10 @@ import {
   Radar 
 } from 'recharts'
 import CodeChallengeModal from '../components/CodeChallengeModal'
+<<<<<<< HEAD
+=======
+import AgentSelectionScreen from '../components/AgentSelectionScreen'
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 import { memoryTimeline, aiReasoningLogs } from '../data/mockData'
 import { useAuth } from '../hooks/useAuth'
 
@@ -41,6 +45,12 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
   const { user } = useAuth()
   const candidateName = user?.fullName || 'Candidate'
   const {
+<<<<<<< HEAD
+=======
+    interviewStatus,
+    selectedAgent,
+    startInterview,
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     session,
     messages,
     isAiThinking,
@@ -54,10 +64,30 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
     setIsCodeModalOpen,
     currentQuestionIndex,
     confidenceScore,
+<<<<<<< HEAD
+=======
+    questionScores,
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   } = interviewHook
 
   const [showReasoning, setShowReasoning] = useState(true)
 
+<<<<<<< HEAD
+=======
+  // Show Agent Selection screen if interview has not started yet or no agent selected
+  if (interviewStatus === 'NOT_STARTED' || !selectedAgent) {
+    return (
+      <div className="h-[calc(100vh-65px)] overflow-hidden bg-slate-950 text-slate-100 flex items-center justify-center">
+        <AgentSelectionScreen 
+          onSelectAndStart={(agent) => {
+            startInterview(agent)
+          }} 
+        />
+      </div>
+    )
+  }
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-65px)] overflow-hidden bg-slate-950 text-slate-100">
       
@@ -73,7 +103,17 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
               {/* Live Interview Status */}
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+<<<<<<< HEAD
                 Live Interview Status: Adaptive
+=======
+                Live Interview Status: Active
+              </span>
+
+              {/* Selected AI Interviewer Badge */}
+              <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1.5 shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                Interviewer: {selectedAgent?.name || 'JARVIS'}
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
               </span>
 
               {/* Estimated Answer Time */}
@@ -93,7 +133,11 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                 onClick={onEndInterview}
                 className="px-4 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs font-bold transition-all"
               >
+<<<<<<< HEAD
                 End Interview
+=======
+                {currentQuestionIndex >= 10 ? 'View Final Evaluation' : 'Exit Interview'}
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
               </button>
             </div>
           </div>
@@ -460,7 +504,11 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
 
           <div className="h-32 w-full">
             <ResponsiveContainer width="100%" height="100%">
+<<<<<<< HEAD
               <LineChart data={session.progressData}>
+=======
+              <LineChart data={questionScores}>
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
                 <XAxis dataKey="question" stroke="#64748b" tick={{ fontSize: 10 }} />
                 <YAxis domain={[50, 100]} stroke="#64748b" hide />
                 <Tooltip 
@@ -471,7 +519,12 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                   dataKey="score" 
                   stroke="#818cf8" 
                   strokeWidth={2.5} 
+<<<<<<< HEAD
                   dot={{ fill: '#6366f1', r: 4 }} 
+=======
+                  dot={{ fill: '#6366f1', r: 4 }}
+                  isAnimationActive={false}
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
                 />
               </LineChart>
             </ResponsiveContainer>

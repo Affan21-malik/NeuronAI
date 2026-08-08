@@ -22,6 +22,11 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(true)
         if (!storedUser.hasCompletedOnboarding && storedUser.isNewUser) {
           setAuthStep('WELCOME')
+<<<<<<< HEAD
+=======
+        } else {
+          setAuthStep('DASHBOARD')
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
         }
       }
     } catch (err) {
@@ -44,9 +49,16 @@ export function AuthProvider({ children }) {
       const res = await authService.signIn({ email, password })
       setUser(res.user)
       setIsAuthenticated(true)
+<<<<<<< HEAD
       setSuccessMessage(res.message)
       if (!res.user.hasCompletedOnboarding && res.user.isNewUser) {
         setAuthStep('WELCOME')
+=======
+      if (!res.user.hasCompletedOnboarding && res.user.isNewUser) {
+        setAuthStep('WELCOME')
+      } else {
+        setAuthStep('DASHBOARD')
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       }
       return res
     } catch (err) {
@@ -136,7 +148,17 @@ export function AuthProvider({ children }) {
   const finishOnboarding = async () => {
     try {
       const updated = await authService.completeOnboarding()
+<<<<<<< HEAD
       if (updated) setUser(updated)
+=======
+      if (updated) {
+        setUser(updated)
+      } else {
+        const current = authService.getCurrentUser()
+        if (current) setUser(current)
+      }
+      setIsAuthenticated(true)
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       setAuthStep('DASHBOARD')
     } catch (err) {
       console.error('Onboarding completion error:', err)

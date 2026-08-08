@@ -31,12 +31,24 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
   ]
 
   return (
+<<<<<<< HEAD
     <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-65px)] bg-slate-950/90 border-r border-indigo-500/15 p-4 backdrop-blur-xl select-none overflow-y-auto">
+=======
+    <aside className="w-64 shrink-0 h-full flex flex-col justify-between bg-slate-950/90 border-r border-indigo-500/15 p-4 backdrop-blur-xl select-none overflow-y-auto">
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       
       <div className="flex flex-col gap-5">
         
         {/* Top Brand Header */}
+<<<<<<< HEAD
         <div className="flex items-center gap-3 px-2 py-1">
+=======
+        <div 
+          onClick={() => setActiveTab('dashboard')}
+          className="flex items-center gap-3 px-2 py-1 cursor-pointer group"
+        >
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[1px] shadow-[0_0_15px_rgba(99,102,241,0.4)] flex items-center justify-center">
             <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
               <Bot className="w-5 h-5 text-indigo-400" />
@@ -44,7 +56,11 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
           </div>
           <div>
             <h1 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+<<<<<<< HEAD
               Neuron<span className="text-indigo-400">AI</span>
+=======
+              Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-indigo-400">AI</span>
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
             </h1>
             <p className="text-[10px] text-slate-400 font-medium">AI Interview Agent OS</p>
           </div>
@@ -166,17 +182,32 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
           </div>
 
           <button
+<<<<<<< HEAD
             onClick={() => setActiveTab('interview')}
             className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95"
           >
             <Zap className="w-3.5 h-3.5 text-amber-300" />
             <span>{interviewStatus === 'IN_PROGRESS' ? 'Continue Interview' : 'Start Interview'}</span>
+=======
+            onClick={onStartNewInterview}
+            className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <span>Start New Interview</span>
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
           </button>
         </div>
 
         {/* Logout Button */}
         <button
+<<<<<<< HEAD
           onClick={logout}
+=======
+          onClick={() => {
+            logout()
+            setActiveTab('landing')
+          }}
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-900/60 hover:bg-rose-500/10 border border-indigo-500/10 hover:border-rose-500/30 text-slate-400 hover:text-rose-300 text-xs font-semibold transition-all"
         >
           <LogOut className="w-3.5 h-3.5" />

@@ -373,6 +373,7 @@ export const initialInterviewSession = {
   title: "Model Context Protocol (MCP) Architecture",
   topic: "MCP Architecture & Secure Tool Call Integration",
   totalQuestions: 10,
+<<<<<<< HEAD
   currentQuestionIndex: 4,
   difficulty: "Hard",
   confidenceScore: 86,
@@ -384,6 +385,19 @@ export const initialInterviewSession = {
     followUps: 2,
     avgResponseTime: "42s",
     sentiment: "High Technical Rigor",
+=======
+  currentQuestionIndex: 0,
+  difficulty: "Hard",
+  confidenceScore: 72,
+  timerSeconds: 0,
+  status: "Not Started",
+  estAnswerTime: "2m 30s",
+  insights: {
+    questionsAsked: 0,
+    followUps: 0,
+    avgResponseTime: "0s",
+    sentiment: "Pending Assessment",
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   },
   progressData: [
     { question: 'Q1', score: 75 },

@@ -13,6 +13,28 @@ const STORAGE_KEYS = {
   PROGRESS: 'neuron_ai_user_progress',
 }
 
+<<<<<<< HEAD
+=======
+const AUTH_VERSION_KEY = 'neuron_ai_auth_version_v3'
+
+// Reset stale legacy test data once to ensure clean authentication state
+function checkAndClearLegacyAuthData() {
+  try {
+    const version = localStorage.getItem(AUTH_VERSION_KEY)
+    if (version !== 'v3') {
+      localStorage.removeItem(STORAGE_KEYS.USER)
+      localStorage.removeItem(STORAGE_KEYS.SESSION)
+      localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION)
+      localStorage.removeItem(STORAGE_KEYS.REGISTERED_USERS)
+      localStorage.removeItem(STORAGE_KEYS.PROGRESS)
+      localStorage.setItem(AUTH_VERSION_KEY, 'v3')
+    }
+  } catch (e) {}
+}
+
+checkAndClearLegacyAuthData()
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 // Helper to simulate realistic backend network latency
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -56,7 +78,10 @@ export const checkEmailRequirements = (email = '') => {
     }
   }
 
+<<<<<<< HEAD
   // Check for malformed errors
+=======
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   const hasSpaces = /\s/.test(raw)
   const atMatches = raw.match(/@/g)
   const atCount = atMatches ? atMatches.length : 0
@@ -146,7 +171,10 @@ export const validateUsername = (username = '') => {
   if (/\s/.test(cleaned)) return { isValid: false, message: 'Spaces are not allowed' }
   if (!/^[a-zA-Z0-9_]+$/.test(cleaned)) return { isValid: false, message: 'Only letters, numbers, and underscores allowed' }
   
+<<<<<<< HEAD
   // Simulated taken usernames for demo
+=======
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   const takenUsernames = ['admin', 'root', 'neuron', 'neuronai', 'support', 'taken']
   if (takenUsernames.includes(cleaned.toLowerCase())) {
     return { isValid: false, isTaken: true, message: 'Username already taken' }
@@ -203,13 +231,34 @@ export const authService = {
     const trimmedFirst = firstName.trim()
     const trimmedLast = lastName.trim()
     const fullName = `${trimmedFirst} ${trimmedLast}`.trim()
+<<<<<<< HEAD
+=======
+    const cleanEmail = email.trim().toLowerCase()
+
+    // Check if email already registered
+    try {
+      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+      const registered = regRaw ? JSON.parse(regRaw) : []
+      const existing = registered.find((u) => u.email.toLowerCase() === cleanEmail)
+      if (existing) {
+        throw new Error('An account with this email address already exists. Please sign in.')
+      }
+    } catch (e) {
+      if (e.message && e.message.includes('already exists')) throw e
+    }
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
 
     const pendingData = {
       firstName: trimmedFirst,
       lastName: trimmedLast,
       fullName,
+<<<<<<< HEAD
       email: email.trim().toLowerCase(),
       password, // In real backend, password hashed on server
+=======
+      email: cleanEmail,
+      password,
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       suggestedUsername: generateSuggestedUsername(fullName),
       createdAt: new Date().toISOString(),
     }
@@ -242,7 +291,11 @@ export const authService = {
     return {
       success: true,
       message: 'Email verified successfully.',
+<<<<<<< HEAD
       suggestedUsername: pendingData ? pendingData.suggestedUsername : generateSuggestedUsername(email.split('@')[0]),
+=======
+      suggestedUsername: pendingData ? pendingData.suggestedUsername : generateSuggestedUsername((email || '').split('@')[0]),
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     }
   },
 
@@ -285,6 +338,10 @@ export const authService = {
       lastName: lName,
       fullName: fullN,
       email: pendingData.email,
+<<<<<<< HEAD
+=======
+      password: pendingData.password,
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       username: username.trim(),
       profilePhoto: profilePhoto || null,
       targetRole: 'AI Systems Engineer',
@@ -321,6 +378,7 @@ export const authService = {
   },
 
   /**
+<<<<<<< HEAD
    * Sign In with Email & Password
    */
   async signIn({ email, password }) {
@@ -376,16 +434,56 @@ export const authService = {
     }
 
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userToLogin))
+=======
+   * Sign In with Email & Password (Strict Credential Verification)
+   */
+  async signIn({ email, password }) {
+    await delay(400)
+
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const cleanPassword = (password || '').trim()
+
+    if (!cleanEmail || !cleanPassword) {
+      throw new Error('Please enter both email and password.')
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      throw new Error('Please enter a valid email address.')
+    }
+
+    // Lookup user in registered users store in localStorage
+    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+    const registered = regRaw ? JSON.parse(regRaw) : []
+    const registeredAccount = registered.find((u) => u.email.toLowerCase() === cleanEmail)
+
+    // Rule 1: If email is NOT registered -> reject login
+    if (!registeredAccount) {
+      throw new Error('Account not registered. Please sign up first.')
+    }
+
+    // Rule 2: If email exists but password does NOT match -> reject login
+    if (registeredAccount.password && registeredAccount.password !== cleanPassword) {
+      throw new Error('Incorrect email or password.')
+    }
+
+    // Rule 3: If email AND password match -> Sign In successful!
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(registeredAccount))
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     localStorage.setItem(STORAGE_KEYS.SESSION, `session_${Date.now()}`)
 
     return {
       success: true,
+<<<<<<< HEAD
       user: userToLogin,
+=======
+      user: registeredAccount,
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       message: 'Signed in successfully.',
     }
   },
 
   /**
+<<<<<<< HEAD
    * Continue with Google OAuth Integration Point.
    * 
    * TODO: Backend Developer - Connect Real Google OAuth Flow Here:
@@ -397,12 +495,18 @@ export const authService = {
    * 4. Backend verifies Google OAuth identity token / auth code
    * 5. Backend returns authenticated user payload (real name, email, profile photo) & session token
    * 6. Frontend receives authenticated user and proceeds to Dashboard
+=======
+   * Continue with Google OAuth Integration Point
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
    */
   async continueWithGoogle() {
     await delay(300)
 
+<<<<<<< HEAD
     // Backend Google OAuth endpoint is not connected yet.
     // Clean entry point ready for backend developer wiring.
+=======
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     console.info('[AuthService] continueWithGoogle invoked. Backend Google OAuth integration pending.')
 
     return {
@@ -412,7 +516,10 @@ export const authService = {
     }
   },
 
+<<<<<<< HEAD
   // Alias for backward compatibility
+=======
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
   async googleAuth() {
     return this.continueWithGoogle()
   },
@@ -427,6 +534,17 @@ export const authService = {
       throw new Error('Please enter a valid email address.')
     }
 
+<<<<<<< HEAD
+=======
+    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+    const registered = regRaw ? JSON.parse(regRaw) : []
+    const account = registered.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
+
+    if (!account) {
+      throw new Error('Account not registered.')
+    }
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     return {
       success: true,
       email: email.trim().toLowerCase(),
@@ -461,6 +579,22 @@ export const authService = {
       throw new Error('Please complete all password requirements.')
     }
 
+<<<<<<< HEAD
+=======
+    // Update password in REGISTERED_USERS store
+    try {
+      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+      if (regRaw) {
+        const registered = JSON.parse(regRaw)
+        const idx = registered.findIndex((u) => u.email.toLowerCase() === email.trim().toLowerCase())
+        if (idx !== -1) {
+          registered[idx].password = newPassword
+          localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+        }
+      }
+    } catch (e) {}
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
     return {
       success: true,
       message: 'Password updated successfully. You can now sign in.',
@@ -475,6 +609,22 @@ export const authService = {
     if (currentUser) {
       const updated = { ...currentUser, hasCompletedOnboarding: true }
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+<<<<<<< HEAD
+=======
+
+      try {
+        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+        if (regRaw) {
+          const registered = JSON.parse(regRaw)
+          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
+          if (idx !== -1) {
+            registered[idx] = { ...registered[idx], ...updated }
+            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+          }
+        }
+      } catch (e) {}
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       return updated
     }
     return null
@@ -487,7 +637,29 @@ export const authService = {
     const currentUser = this.getCurrentUser()
     if (currentUser) {
       const updated = { ...currentUser, ...updates }
+<<<<<<< HEAD
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+=======
+      
+      // 1. Update active session user in localStorage
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+
+      // 2. Sync changes into persistent REGISTERED_USERS array in localStorage
+      try {
+        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+        if (regRaw) {
+          const registered = JSON.parse(regRaw)
+          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
+          if (idx !== -1) {
+            registered[idx] = { ...registered[idx], ...updated }
+            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync updated profile to registered users store:', e)
+      }
+
+>>>>>>> 6fa68a3bfb443ac86feb59b06b67f69e8efd3c86
       return updated
     }
     return null
