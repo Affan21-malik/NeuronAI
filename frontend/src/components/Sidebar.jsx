@@ -31,7 +31,8 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
   ]
 
   return (
-    <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-65px)] bg-slate-950/90 border-r border-indigo-500/15 p-4 backdrop-blur-xl select-none overflow-y-auto">
+    <aside className="w-64 shrink-0 h-full flex flex-col justify-between bg-slate-950/90 border-r border-indigo-500/15 p-4 backdrop-blur-xl select-none overflow-y-auto">
+
       
       <div className="flex flex-col gap-5">
         

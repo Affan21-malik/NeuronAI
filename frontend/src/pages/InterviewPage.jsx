@@ -93,7 +93,7 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                 onClick={onEndInterview}
                 className="px-4 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs font-bold transition-all"
               >
-                End Interview
+                {currentQuestionIndex >= 10 ? 'View Final Evaluation' : 'Exit Interview'}
               </button>
             </div>
           </div>

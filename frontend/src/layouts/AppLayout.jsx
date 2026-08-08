@@ -11,6 +11,7 @@ import ReportsPage from '../pages/ReportsPage'
 import HistoryPage from '../pages/HistoryPage'
 import AuthPage from '../pages/auth/AuthPage'
 import FeedbackModal from '../components/FeedbackModal'
+import CustomCursor from '../components/CustomCursor'
 import { AuthProvider } from '../context/AuthContext'
 import { useAuth } from '../hooks/useAuth'
 import { useInterview } from '../hooks/useInterview'
@@ -18,7 +19,8 @@ import { Cpu } from 'lucide-react'
 
 function AppLayoutContent() {
   const { isAuthenticated, isLoading, authStep } = useAuth()
-  const [activeTab, setActiveTab] = useState('dashboard')
+  // Requirement 6: Landing Page MUST open first
+  const [activeTab, setActiveTab] = useState('landing')
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
   // Central interview session hook
@@ -26,19 +28,56 @@ function AppLayoutContent() {
   const { interviewStatus, startInterview, completeInterview, resetInterview } = interviewHook
 
   const handleStartInterviewAction = () => {
+    if (!isAuthenticated) {
+      setActiveTab('auth')
+      return
+    }
     startInterview()
     setActiveTab('interview')
   }
 
-  const handleEndInterviewAction = () => {
-    completeInterview()
-    setActiveTab('report-details')
+  const handleGoToDashboardAction = () => {
+    if (!isAuthenticated) {
+      setActiveTab('auth')
+      return
+    }
+    setActiveTab('dashboard')
   }
+
+  const handleEndInterviewAction = () => {
+    if (interviewHook.currentQuestionIndex >= 10) {
+      completeInterview()
+      setActiveTab('report-details')
+    } else {
+      // Exited mid-interview before completing Q10 -> Incomplete / abandoned
+      resetInterview()
+      setActiveTab('dashboard')
+    }
+  }
+
+  const handleSelectTab = (tabId) => {
+    const publicTabs = ['landing', 'auth']
+    if (!publicTabs.includes(tabId) && !isAuthenticated) {
+      setActiveTab('auth')
+      return
+    }
+    setActiveTab(tabId)
+  }
+
+  // Sync activeTab to dashboard when user becomes authenticated & completes onboarding
+  React.useEffect(() => {
+    if (isAuthenticated && authStep === 'DASHBOARD') {
+      if (activeTab === 'auth') {
+        setActiveTab('dashboard')
+      }
+    }
+  }, [isAuthenticated, authStep, activeTab])
 
   // 1. Initial Auth Loading Spinner State
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center select-none">
+        <CustomCursor />
         <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-[1px] shadow-[0_0_30px_rgba(99,102,241,0.6)] mb-4 animate-bounce">
           <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
             <Cpu className="w-8 h-8 text-indigo-400 animate-pulse" />
@@ -50,23 +89,33 @@ function AppLayoutContent() {
     )
   }
 
-  // 2. Strict Unauthenticated Route Protection Guard
-  const isAuthScreen = !isAuthenticated || authStep !== 'DASHBOARD'
+  // Requirement 6: Render AuthPage when user explicitly chooses Auth or tries to access protected tab while unauthenticated
+  const isAuthTab = (activeTab === 'auth' && (!isAuthenticated || authStep !== 'DASHBOARD')) || (!isAuthenticated && activeTab !== 'landing')
 
-  if (isAuthScreen) {
-    return <AuthPage />
+  if (isAuthTab) {
+    return (
+      <>
+        <CustomCursor />
+        <AuthPage />
+      </>
+    )
   }
 
-  // 3. Authenticated App Layout
+  // Authenticated or Landing App Layout
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+    <div className={`bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white ${
+      activeTab === 'landing' ? 'min-h-screen overflow-x-hidden' : 'h-screen overflow-hidden'
+    }`}>
+      {/* Requirement 5: Subtle Custom NeuronAI Cursor */}
+      <CustomCursor />
       
       {/* Top Navbar */}
       <Navbar 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSelectTab}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
         interviewStatus={interviewStatus}
+        currentQuestionIndex={interviewHook.currentQuestionIndex}
         onStartInterview={handleStartInterviewAction}
         onCompleteInterview={completeInterview}
         onResetInterview={resetInterview}
@@ -74,31 +123,34 @@ function AppLayoutContent() {
 
       {/* Main View Area */}
       {activeTab === 'landing' ? (
-        <LandingPage 
-          onLaunchInterview={handleStartInterviewAction}
-          onGoToDashboard={() => setActiveTab('dashboard')}
-        />
+        <div className="flex-1 overflow-y-auto">
+          <LandingPage 
+            onLaunchInterview={handleStartInterviewAction}
+            onGoToDashboard={handleGoToDashboardAction}
+          />
+        </div>
       ) : (
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden h-[calc(100vh-65px)]">
           
-          {/* Left Sidebar */}
+          {/* Requirement 4: Left Sidebar (Fixed to Viewport) */}
           <Sidebar 
             activeTab={activeTab === 'report-details' ? 'report' : activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleSelectTab}
             onStartNewInterview={handleStartInterviewAction}
             onOpenFeedback={() => setIsFeedbackOpen(true)}
             interviewStatus={interviewStatus}
           />
 
-          {/* Dynamic Content Canvas */}
-          <main className="flex-1 overflow-y-auto bg-slate-950/60 bg-grid-pattern">
+          {/* Dynamic Content Canvas — Independent Vertical Scroll */}
+          <main className="flex-1 h-full overflow-y-auto bg-slate-950/60 bg-grid-pattern">
+
             {activeTab === 'dashboard' && (
               <DashboardPage 
                 interviewStatus={interviewStatus}
                 onStartInterview={handleStartInterviewAction}
-                onViewReport={() => setActiveTab('report-details')}
-                onViewSkillGap={() => setActiveTab('skillgap')}
-                onViewKnowledgeMap={() => setActiveTab('knowledge')}
+                onViewReport={() => handleSelectTab('report-details')}
+                onViewSkillGap={() => handleSelectTab('skillgap')}
+                onViewKnowledgeMap={() => handleSelectTab('knowledge')}
               />
             )}
 
@@ -113,7 +165,7 @@ function AppLayoutContent() {
               <ReportsPage 
                 interviewStatus={interviewStatus}
                 onStartInterview={handleStartInterviewAction}
-                onViewReportDetails={() => setActiveTab('report-details')}
+                onViewReportDetails={() => handleSelectTab('report-details')}
                 onOpenFeedback={() => setIsFeedbackOpen(true)}
               />
             )}
@@ -142,7 +194,7 @@ function AppLayoutContent() {
 
             {activeTab === 'history' && (
               <HistoryPage 
-                onViewReport={() => setActiveTab('report-details')}
+                onViewReport={() => handleSelectTab('report-details')}
                 onStartInterview={handleStartInterviewAction}
                 interviewStatus={interviewStatus}
               />
@@ -169,3 +221,4 @@ export default function AppLayout() {
     </AuthProvider>
   )
 }
+

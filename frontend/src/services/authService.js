@@ -13,6 +13,25 @@ const STORAGE_KEYS = {
   PROGRESS: 'neuron_ai_user_progress',
 }
 
+const AUTH_VERSION_KEY = 'neuron_ai_auth_version_v3'
+
+// Reset stale legacy test data once to ensure clean authentication state
+function checkAndClearLegacyAuthData() {
+  try {
+    const version = localStorage.getItem(AUTH_VERSION_KEY)
+    if (version !== 'v3') {
+      localStorage.removeItem(STORAGE_KEYS.USER)
+      localStorage.removeItem(STORAGE_KEYS.SESSION)
+      localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION)
+      localStorage.removeItem(STORAGE_KEYS.REGISTERED_USERS)
+      localStorage.removeItem(STORAGE_KEYS.PROGRESS)
+      localStorage.setItem(AUTH_VERSION_KEY, 'v3')
+    }
+  } catch (e) {}
+}
+
+checkAndClearLegacyAuthData()
+
 // Helper to simulate realistic backend network latency
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -56,7 +75,6 @@ export const checkEmailRequirements = (email = '') => {
     }
   }
 
-  // Check for malformed errors
   const hasSpaces = /\s/.test(raw)
   const atMatches = raw.match(/@/g)
   const atCount = atMatches ? atMatches.length : 0
@@ -146,7 +164,6 @@ export const validateUsername = (username = '') => {
   if (/\s/.test(cleaned)) return { isValid: false, message: 'Spaces are not allowed' }
   if (!/^[a-zA-Z0-9_]+$/.test(cleaned)) return { isValid: false, message: 'Only letters, numbers, and underscores allowed' }
   
-  // Simulated taken usernames for demo
   const takenUsernames = ['admin', 'root', 'neuron', 'neuronai', 'support', 'taken']
   if (takenUsernames.includes(cleaned.toLowerCase())) {
     return { isValid: false, isTaken: true, message: 'Username already taken' }
@@ -203,13 +220,26 @@ export const authService = {
     const trimmedFirst = firstName.trim()
     const trimmedLast = lastName.trim()
     const fullName = `${trimmedFirst} ${trimmedLast}`.trim()
+    const cleanEmail = email.trim().toLowerCase()
+
+    // Check if email already registered
+    try {
+      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+      const registered = regRaw ? JSON.parse(regRaw) : []
+      const existing = registered.find((u) => u.email.toLowerCase() === cleanEmail)
+      if (existing) {
+        throw new Error('An account with this email address already exists. Please sign in.')
+      }
+    } catch (e) {
+      if (e.message && e.message.includes('already exists')) throw e
+    }
 
     const pendingData = {
       firstName: trimmedFirst,
       lastName: trimmedLast,
       fullName,
-      email: email.trim().toLowerCase(),
-      password, // In real backend, password hashed on server
+      email: cleanEmail,
+      password,
       suggestedUsername: generateSuggestedUsername(fullName),
       createdAt: new Date().toISOString(),
     }
@@ -242,7 +272,7 @@ export const authService = {
     return {
       success: true,
       message: 'Email verified successfully.',
-      suggestedUsername: pendingData ? pendingData.suggestedUsername : generateSuggestedUsername(email.split('@')[0]),
+      suggestedUsername: pendingData ? pendingData.suggestedUsername : generateSuggestedUsername((email || '').split('@')[0]),
     }
   },
 
@@ -285,6 +315,7 @@ export const authService = {
       lastName: lName,
       fullName: fullN,
       email: pendingData.email,
+      password: pendingData.password,
       username: username.trim(),
       profilePhoto: profilePhoto || null,
       targetRole: 'AI Systems Engineer',
@@ -321,88 +352,54 @@ export const authService = {
   },
 
   /**
-   * Sign In with Email & Password
+   * Sign In with Email & Password (Strict Credential Verification)
    */
   async signIn({ email, password }) {
-    await delay(500)
+    await delay(400)
 
-    if (!isValidEmail(email)) {
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const cleanPassword = (password || '').trim()
+
+    if (!cleanEmail || !cleanPassword) {
+      throw new Error('Please enter both email and password.')
+    }
+
+    if (!isValidEmail(cleanEmail)) {
       throw new Error('Please enter a valid email address.')
     }
 
-    if (!password) {
-      throw new Error('Password is required.')
+    // Lookup user in registered users store in localStorage
+    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+    const registered = regRaw ? JSON.parse(regRaw) : []
+    const registeredAccount = registered.find((u) => u.email.toLowerCase() === cleanEmail)
+
+    // Rule 1: If email is NOT registered -> reject login
+    if (!registeredAccount) {
+      throw new Error('Account not registered. Please sign up first.')
     }
 
-    // Check registered users store in localStorage first
-    let userToLogin = null
-    try {
-      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-      const registered = regRaw ? JSON.parse(regRaw) : []
-      const found = registered.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-      if (found) {
-        userToLogin = found
-      }
-    } catch (e) {}
-
-    if (!userToLogin) {
-      const existingUser = this.getCurrentUser()
-      if (existingUser && existingUser.email.toLowerCase() === email.trim().toLowerCase()) {
-        userToLogin = existingUser
-      }
+    // Rule 2: If email exists but password does NOT match -> reject login
+    if (registeredAccount.password && registeredAccount.password !== cleanPassword) {
+      throw new Error('Incorrect email or password.')
     }
 
-    if (!userToLogin) {
-      // Create session for new login with provided credentials (extract name from email prefix)
-      const prefix = email.split('@')[0]
-      const nameParts = prefix.split(/[._-]/).filter(Boolean)
-      const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : prefix
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].slice(1) : ''
-      const formattedName = `${firstName} ${lastName}`.trim() || prefix
-
-      userToLogin = {
-        id: `usr-${Date.now()}`,
-        firstName,
-        lastName,
-        fullName: formattedName,
-        email: email.trim().toLowerCase(),
-        username: generateSuggestedUsername(prefix),
-        profilePhoto: null,
-        targetRole: 'AI Systems Engineer',
-        createdAt: new Date().toISOString(),
-        isNewUser: true,
-        hasCompletedOnboarding: true,
-      }
-    }
-
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userToLogin))
+    // Rule 3: If email AND password match -> Sign In successful!
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(registeredAccount))
     localStorage.setItem(STORAGE_KEYS.SESSION, `session_${Date.now()}`)
 
     return {
       success: true,
-      user: userToLogin,
+      user: registeredAccount,
       message: 'Signed in successfully.',
     }
   },
 
   /**
-   * Continue with Google OAuth Integration Point.
-   * 
-   * TODO: Backend Developer - Connect Real Google OAuth Flow Here:
-   * 
-   * Flow Sequence:
-   * 1. User clicks "Continue with Google"
-   * 2. Initiate Real Google OAuth (e.g., redirect to window.location.href = '/api/auth/google' or Google OAuth popup/SDK)
-   * 3. User selects their actual Google account in Google's real account chooser
-   * 4. Backend verifies Google OAuth identity token / auth code
-   * 5. Backend returns authenticated user payload (real name, email, profile photo) & session token
-   * 6. Frontend receives authenticated user and proceeds to Dashboard
+   * Continue with Google OAuth Integration Point
    */
   async continueWithGoogle() {
     await delay(300)
 
-    // Backend Google OAuth endpoint is not connected yet.
-    // Clean entry point ready for backend developer wiring.
     console.info('[AuthService] continueWithGoogle invoked. Backend Google OAuth integration pending.')
 
     return {
@@ -412,7 +409,6 @@ export const authService = {
     }
   },
 
-  // Alias for backward compatibility
   async googleAuth() {
     return this.continueWithGoogle()
   },
@@ -425,6 +421,14 @@ export const authService = {
 
     if (!isValidEmail(email)) {
       throw new Error('Please enter a valid email address.')
+    }
+
+    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+    const registered = regRaw ? JSON.parse(regRaw) : []
+    const account = registered.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
+
+    if (!account) {
+      throw new Error('Account not registered.')
     }
 
     return {
@@ -461,6 +465,19 @@ export const authService = {
       throw new Error('Please complete all password requirements.')
     }
 
+    // Update password in REGISTERED_USERS store
+    try {
+      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+      if (regRaw) {
+        const registered = JSON.parse(regRaw)
+        const idx = registered.findIndex((u) => u.email.toLowerCase() === email.trim().toLowerCase())
+        if (idx !== -1) {
+          registered[idx].password = newPassword
+          localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+        }
+      }
+    } catch (e) {}
+
     return {
       success: true,
       message: 'Password updated successfully. You can now sign in.',
@@ -475,6 +492,19 @@ export const authService = {
     if (currentUser) {
       const updated = { ...currentUser, hasCompletedOnboarding: true }
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+
+      try {
+        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+        if (regRaw) {
+          const registered = JSON.parse(regRaw)
+          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
+          if (idx !== -1) {
+            registered[idx] = { ...registered[idx], ...updated }
+            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+          }
+        }
+      } catch (e) {}
+
       return updated
     }
     return null
@@ -487,7 +517,25 @@ export const authService = {
     const currentUser = this.getCurrentUser()
     if (currentUser) {
       const updated = { ...currentUser, ...updates }
+      
+      // 1. Update active session user in localStorage
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+
+      // 2. Sync changes into persistent REGISTERED_USERS array in localStorage
+      try {
+        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
+        if (regRaw) {
+          const registered = JSON.parse(regRaw)
+          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
+          if (idx !== -1) {
+            registered[idx] = { ...registered[idx], ...updated }
+            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync updated profile to registered users store:', e)
+      }
+
       return updated
     }
     return null

@@ -22,6 +22,8 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(true)
         if (!storedUser.hasCompletedOnboarding && storedUser.isNewUser) {
           setAuthStep('WELCOME')
+        } else {
+          setAuthStep('DASHBOARD')
         }
       }
     } catch (err) {
@@ -44,9 +46,10 @@ export function AuthProvider({ children }) {
       const res = await authService.signIn({ email, password })
       setUser(res.user)
       setIsAuthenticated(true)
-      setSuccessMessage(res.message)
       if (!res.user.hasCompletedOnboarding && res.user.isNewUser) {
         setAuthStep('WELCOME')
+      } else {
+        setAuthStep('DASHBOARD')
       }
       return res
     } catch (err) {
@@ -136,7 +139,13 @@ export function AuthProvider({ children }) {
   const finishOnboarding = async () => {
     try {
       const updated = await authService.completeOnboarding()
-      if (updated) setUser(updated)
+      if (updated) {
+        setUser(updated)
+      } else {
+        const current = authService.getCurrentUser()
+        if (current) setUser(current)
+      }
+      setIsAuthenticated(true)
       setAuthStep('DASHBOARD')
     } catch (err) {
       console.error('Onboarding completion error:', err)
