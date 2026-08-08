@@ -37,7 +37,10 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
       <div className="flex flex-col gap-5">
         
         {/* Top Brand Header */}
-        <div className="flex items-center gap-3 px-2 py-1">
+        <div 
+          onClick={() => setActiveTab('dashboard')}
+          className="flex items-center gap-3 px-2 py-1 cursor-pointer group"
+        >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[1px] shadow-[0_0_15px_rgba(99,102,241,0.4)] flex items-center justify-center">
             <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
               <Bot className="w-5 h-5 text-indigo-400" />
@@ -45,7 +48,7 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
           </div>
           <div>
             <h1 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
-              Neuron<span className="text-indigo-400">AI</span>
+              Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-indigo-400">AI</span>
             </h1>
             <p className="text-[10px] text-slate-400 font-medium">AI Interview Agent OS</p>
           </div>
@@ -177,7 +180,10 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
 
         {/* Logout Button */}
         <button
-          onClick={logout}
+          onClick={() => {
+            logout()
+            setActiveTab('landing')
+          }}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-900/60 hover:bg-rose-500/10 border border-indigo-500/10 hover:border-rose-500/30 text-slate-400 hover:text-rose-300 text-xs font-semibold transition-all"
         >
           <LogOut className="w-3.5 h-3.5" />

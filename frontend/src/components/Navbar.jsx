@@ -105,7 +105,7 @@ export default function Navbar({
         
         {/* Brand Logo */}
         <div 
-          onClick={() => setActiveTab('landing')}
+          onClick={() => setActiveTab(isAuthenticated ? 'dashboard' : 'landing')}
           className="flex items-center gap-3 cursor-pointer group shrink-0"
         >
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-[1px] shadow-[0_0_20px_rgba(99,102,241,0.5)] group-hover:scale-105 transition-transform">
@@ -116,7 +116,7 @@ export default function Navbar({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-xl tracking-tight text-white group-hover:text-indigo-400 transition-colors">
-                Neuron<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
+                Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
               </span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
                 PRO v2.4
@@ -129,18 +129,6 @@ export default function Navbar({
         {/* Navigation Links (Visible only for Authenticated Sessions) */}
         {isAuthenticated && (
           <nav className="hidden lg:flex items-center gap-1 bg-slate-900/80 p-1.5 rounded-full border border-indigo-500/20 shadow-inner">
-            <button
-              onClick={() => setActiveTab('landing')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === 'landing'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Landing
-            </button>
-            
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${

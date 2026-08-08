@@ -7,6 +7,15 @@
     color-scheme: dark;
   }
 
+  /* Hide default native browser mouse cursor globally so ONLY NeuronAI custom cursor is visible */
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
+
   body {
     margin: 0;
     padding: 0;

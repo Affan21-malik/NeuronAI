@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Check,
   ShieldCheck,
-  BookOpen
+  BookOpen,
+  Bot
 } from 'lucide-react'
 import { 
   ResponsiveContainer, 
@@ -31,7 +32,7 @@ import {
 
 import { useAuth } from '../hooks/useAuth'
 
-export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, interviewStatus }) {
+export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, interviewStatus, selectedAgent }) {
   const { user } = useAuth()
   const candidateName = user?.fullName || 'Candidate'
   const isLocked = interviewStatus === 'NOT_STARTED'
@@ -65,6 +66,8 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, i
     )
   }
 
+  const interviewerName = selectedAgent?.name || 'JARVIS'
+
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto text-slate-100">
 
@@ -81,6 +84,10 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, i
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               Evaluation Report Complete
             </span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1.5">
+              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+              Interviewer: {interviewerName}
+            </span>
             <span className="text-xs font-mono text-slate-400">{finalReportData.date}</span>
           </div>
 
@@ -88,7 +95,7 @@ export default function FinalReportPage({ onOpenFeedback, onStartNewInterview, i
             Staff Level Evaluation: <span className="text-indigo-400">{candidateName}</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 font-medium">
-            Role Target: {finalReportData.roleEvaluated} • Session ID: #{finalReportData.id}
+            Role Target: {finalReportData.roleEvaluated} • Session ID: #{finalReportData.id} • Interviewer: <strong className="text-indigo-300">{interviewerName}</strong>
           </p>
         </div>
 

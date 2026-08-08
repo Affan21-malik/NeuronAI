@@ -20,6 +20,7 @@ export function useInterview() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => saved?.currentQuestionIndex ?? 0)
   const [session, setSession] = useState(initialInterviewSession)
   const [messages, setMessages] = useState(() => saved?.messages || initialInterviewSession.messages)
+  const [selectedAgent, setSelectedAgent] = useState(() => saved?.selectedAgent || null)
   const [isAiThinking, setIsAiThinking] = useState(false)
   const [timerSeconds, setTimerSeconds] = useState(() => saved?.timerSeconds || 0)
   const [isTimerRunning, setIsTimerRunning] = useState(() => saved?.interviewStatus === 'IN_PROGRESS')
@@ -57,10 +58,11 @@ export function useInterview() {
         timerSeconds,
         confidenceScore,
         messages,
+        selectedAgent,
       }
       localStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify(stateToSave))
     } catch (e) {}
-  }, [interviewStatus, activeQuestionNumber, timerSeconds, confidenceScore, messages])
+  }, [interviewStatus, activeQuestionNumber, timerSeconds, confidenceScore, messages, selectedAgent])
 
   // Timer interval
   useEffect(() => {
@@ -80,13 +82,25 @@ export function useInterview() {
     return `${hrs > 0 ? String(hrs).padStart(2, '0') + ':' : ''}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-  const startInterview = () => {
+  const startInterview = (agent = null) => {
+    const agentToUse = agent || selectedAgent || { id: 'jarvis', name: 'JARVIS', tagline: 'Precision & Technical Correctness' }
+    setSelectedAgent(agentToUse)
     setRawStatus('IN_PROGRESS')
     setIsTimerRunning(true)
     setTimerSeconds(0)
     setCurrentQuestionIndex(1)
     setConfidenceScore(72)
-    setMessages(initialInterviewSession.messages)
+
+    const initialMsg = {
+      id: `msg-ai-init`,
+      sender: 'ai',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      content: `Hello! I am ${agentToUse.name}, your ${agentToUse.role || 'AI Interviewer'} for today's session.\n\nLet's begin with Question 1: How do you handle distributed consensus and state synchronization in high-throughput microservice architectures?`,
+      badge: `Question 1/10 • ${agentToUse.name}`,
+      followUp: false,
+    }
+
+    setMessages([initialMsg])
     try {
       localStorage.removeItem(INTERVIEW_STORAGE_KEY)
     } catch (e) {}
@@ -104,6 +118,7 @@ export function useInterview() {
     setTimerSeconds(0)
     setCurrentQuestionIndex(0)
     setConfidenceScore(72)
+    setSelectedAgent(null)
     setMessages(initialInterviewSession.messages)
     try {
       localStorage.removeItem(INTERVIEW_STORAGE_KEY)
@@ -165,12 +180,14 @@ export function useInterview() {
         Math.floor(Math.random() * session.nextSimulatedQuestions.length)
       ]
 
+      const activeAgentName = selectedAgent?.name || 'JARVIS'
+
       const aiMsg = {
         id: `msg-ai-${Date.now()}`,
         sender: 'ai',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        content: `Great response! Let me evaluate your implementation depth.\n\n${nextQuestionObj.question}`,
-        badge: `Question ${nextIndex}/10`,
+        content: `[${activeAgentName}] Evaluated response depth.\n\n${nextQuestionObj.question}`,
+        badge: `Question ${nextIndex}/10 • ${activeAgentName}`,
         followUp: false,
       }
 
@@ -199,6 +216,8 @@ export function useInterview() {
 
   return {
     interviewStatus,
+    selectedAgent,
+    setSelectedAgent,
     setInterviewStatus: (status) => {
       setRawStatus(status)
       if (status === 'IN_PROGRESS' && currentQuestionIndex === 0) {

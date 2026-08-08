@@ -23,7 +23,8 @@ export default function ReportsPage({
   interviewStatus, 
   onStartInterview, 
   onViewReportDetails, 
-  onOpenFeedback 
+  onOpenFeedback,
+  selectedAgent 
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFilter, setSelectedFilter] = useState('All')
@@ -58,9 +59,9 @@ export default function ReportsPage({
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-20 right-8 z-50 px-4 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-xs shadow-2xl border border-indigo-400 flex items-center gap-2"
+          className="fixed top-20 right-8 z-50 px-4 py-3 rounded-2xl bg-indigo-600 text-white font-semibold text-xs shadow-2xl border border-indigo-400/30 flex items-center gap-2"
         >
-          <Sparkles className="w-4 h-4 text-amber-300" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
           <span>{downloadToast}</span>
         </motion.div>
       )}

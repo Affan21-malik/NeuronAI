@@ -34,6 +34,7 @@ import {
   Radar 
 } from 'recharts'
 import CodeChallengeModal from '../components/CodeChallengeModal'
+import AgentSelectionScreen from '../components/AgentSelectionScreen'
 import { memoryTimeline, aiReasoningLogs } from '../data/mockData'
 import { useAuth } from '../hooks/useAuth'
 
@@ -41,6 +42,9 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
   const { user } = useAuth()
   const candidateName = user?.fullName || 'Candidate'
   const {
+    interviewStatus,
+    selectedAgent,
+    startInterview,
     session,
     messages,
     isAiThinking,
@@ -58,6 +62,19 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
 
   const [showReasoning, setShowReasoning] = useState(true)
 
+  // Show Agent Selection screen if interview has not started yet or no agent selected
+  if (interviewStatus === 'NOT_STARTED' || !selectedAgent) {
+    return (
+      <div className="h-[calc(100vh-65px)] overflow-hidden bg-slate-950 text-slate-100 flex items-center justify-center">
+        <AgentSelectionScreen 
+          onSelectAndStart={(agent) => {
+            startInterview(agent)
+          }} 
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-65px)] overflow-hidden bg-slate-950 text-slate-100">
       
@@ -73,7 +90,13 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
               {/* Live Interview Status */}
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                Live Interview Status: Adaptive
+                Live Interview Status: Active
+              </span>
+
+              {/* Selected AI Interviewer Badge */}
+              <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1.5 shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                Interviewer: {selectedAgent?.name || 'JARVIS'}
               </span>
 
               {/* Estimated Answer Time */}

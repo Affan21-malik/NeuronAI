@@ -19,8 +19,17 @@ import { Cpu } from 'lucide-react'
 
 function AppLayoutContent() {
   const { isAuthenticated, isLoading, authStep } = useAuth()
-  // Requirement 6: Landing Page MUST open first
-  const [activeTab, setActiveTab] = useState('landing')
+  // Session persistence: restored authenticated sessions open Dashboard directly
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const user = localStorage.getItem('neuron_ai_auth_user')
+      const session = localStorage.getItem('neuron_ai_session')
+      if (user && session) {
+        return 'dashboard'
+      }
+    } catch (e) {}
+    return 'landing'
+  })
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
   // Central interview session hook
@@ -56,6 +65,10 @@ function AppLayoutContent() {
   }
 
   const handleSelectTab = (tabId) => {
+    if (tabId === 'landing' && isAuthenticated) {
+      setActiveTab('dashboard')
+      return
+    }
     const publicTabs = ['landing', 'auth']
     if (!publicTabs.includes(tabId) && !isAuthenticated) {
       setActiveTab('auth')
@@ -64,11 +77,15 @@ function AppLayoutContent() {
     setActiveTab(tabId)
   }
 
-  // Sync activeTab to dashboard when user becomes authenticated & completes onboarding
+  // Sync activeTab to dashboard when user is authenticated, or landing on logout
   React.useEffect(() => {
     if (isAuthenticated && authStep === 'DASHBOARD') {
-      if (activeTab === 'auth') {
+      if (activeTab === 'landing' || activeTab === 'auth') {
         setActiveTab('dashboard')
+      }
+    } else if (!isAuthenticated) {
+      if (activeTab !== 'auth') {
+        setActiveTab('landing')
       }
     }
   }, [isAuthenticated, authStep, activeTab])
@@ -77,7 +94,6 @@ function AppLayoutContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center select-none">
-        <CustomCursor />
         <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-[1px] shadow-[0_0_30px_rgba(99,102,241,0.6)] mb-4 animate-bounce">
           <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
             <Cpu className="w-8 h-8 text-indigo-400 animate-pulse" />
@@ -93,12 +109,7 @@ function AppLayoutContent() {
   const isAuthTab = (activeTab === 'auth' && (!isAuthenticated || authStep !== 'DASHBOARD')) || (!isAuthenticated && activeTab !== 'landing')
 
   if (isAuthTab) {
-    return (
-      <>
-        <CustomCursor />
-        <AuthPage />
-      </>
-    )
+    return <AuthPage />
   }
 
   // Authenticated or Landing App Layout
@@ -106,9 +117,6 @@ function AppLayoutContent() {
     <div className={`bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white ${
       activeTab === 'landing' ? 'min-h-screen overflow-x-hidden' : 'h-screen overflow-hidden'
     }`}>
-      {/* Requirement 5: Subtle Custom NeuronAI Cursor */}
-      <CustomCursor />
-      
       {/* Top Navbar */}
       <Navbar 
         activeTab={activeTab}
@@ -167,6 +175,7 @@ function AppLayoutContent() {
                 onStartInterview={handleStartInterviewAction}
                 onViewReportDetails={() => handleSelectTab('report-details')}
                 onOpenFeedback={() => setIsFeedbackOpen(true)}
+                selectedAgent={interviewHook.selectedAgent}
               />
             )}
 
@@ -175,6 +184,7 @@ function AppLayoutContent() {
                 onOpenFeedback={() => setIsFeedbackOpen(true)}
                 onStartNewInterview={handleStartInterviewAction}
                 interviewStatus={interviewStatus}
+                selectedAgent={interviewHook.selectedAgent}
               />
             )}
 
@@ -217,6 +227,7 @@ function AppLayoutContent() {
 export default function AppLayout() {
   return (
     <AuthProvider>
+      <CustomCursor />
       <AppLayoutContent />
     </AuthProvider>
   )

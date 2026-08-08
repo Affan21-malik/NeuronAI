@@ -344,7 +344,7 @@ export default function AuthPage() {
               </div>
               <div>
                 <span className="font-black text-xl tracking-tight text-white block leading-tight">
-                  Neuron<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
+                  Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium">Autonomous Probing OS</span>
               </div>
@@ -422,7 +422,7 @@ export default function AuthPage() {
               </div>
             </div>
             <span className="font-extrabold text-2xl tracking-tight text-white">
-              Neuron<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
+              Neur<span className="relative inline-block">o<span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[3px] h-[3px] bg-black rounded-full pointer-events-none" /></span>n<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">AI</span>
             </span>
           </div>
 
