@@ -1,14 +1,40 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.interview import router as interview_router
+
 
 app = FastAPI(
     title="NeuronAI",
-    description="Adaptive AI Technical Interview Agent",
+    description="Adaptive AI Technical Interviewer",
     version="0.1.0",
+)
+
+# Local development origins.
+# Vite commonly runs on 5173, while older setups may use 3000.
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(
+    interview_router,
+    prefix="/api",
 )
 
 
 @app.get("/health")
-def health():
+async def health_check() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "neuronai",
