@@ -335,6 +335,36 @@ These questions should encourage explanation rather than short answers.
 ---
 
 
+## Runtime Follow-Up Signal
+
+When FOLLOWUP_MODE is TRUE, use the evaluator output as the primary signal for deciding what to probe next.
+
+Use:
+- the previous candidate answer
+- the previous question
+- evaluator output
+- interview state
+- conversation history
+
+When the evaluator identifies a weakness, missing evidence, or suggested probe area, target that specific dimension.
+
+Examples:
+
+- Missing trade-offs → ask about alternatives or trade-offs.
+- Missing implementation detail → ask about a concrete implementation decision.
+- Missing scalability → ask how the design behaves at larger scale.
+- Missing failure handling → ask how the candidate would handle failure.
+- Vague reasoning → ask why the candidate chose the approach.
+
+Do NOT repeat the previous question.
+
+Do NOT simply rephrase the previous question.
+
+Do NOT introduce an unrelated technical concept.
+
+The follow-up must add a new piece of technical evidence.
+
+---
 
 # Question Generation Rules
 

@@ -475,9 +475,19 @@ class InterviewEngine:
         # 10. Return API response
         # ---------------------------------------------------------
 
+        jarvis_introduction = (
+            "Hello, I am JARVIS, your AI technical interviewer. "
+            "I'll adapt this interview based on your responses and "
+            "demonstrated understanding. Let's begin."
+        )
+        candidate_facing_message = (
+            f"{jarvis_introduction}\n\n"
+            f"{question}"
+        )
+
         return InterviewResponse(
             session_id=session.session_id,
-            next_question=question,
+            next_question=candidate_facing_message,
             current_topic=topic,
             difficulty=session.difficulty,
             evaluation=None,

@@ -30,6 +30,38 @@ You will receive:
 
 ---
 
+## Runtime Interview Data
+
+The following values are supplied dynamically by the interview engine.
+
+### Current Topic
+
+{topic}
+
+### Current Difficulty
+
+{difficulty}
+
+### Current Interview Question
+
+{question}
+
+### Candidate's Latest Response
+
+{user_response}
+
+### Conversation History
+
+{context}
+
+IMPORTANT:
+The "Candidate's Latest Response" above is the answer you MUST evaluate.
+
+Do not claim that the candidate response is missing if {user_response} contains text.
+
+Evaluate the candidate's latest response against the current interview question and topic.
+
+The conversation history is supporting context only. The latest candidate response is the primary evidence for this evaluation.
 # Primary Objective
 
 Evaluate the quality of the candidate's answer using only the provided information.
