@@ -109,14 +109,14 @@ class MemoryManager:
     ) -> InterviewSession:
         state = self._get_state(session_id)
 
-        for topic, score in updates.items():
-            if not 0 <= score <= 100:
+        for topic, mastery in updates.items():
+            if not 0.0 <= mastery <= 1.0:
                 raise ValueError(
-                    f"Knowledge score for '{topic}' "
-                    "must be between 0 and 100."
+                    f"Knowledge mastery for '{topic}' "
+                    "must be between 0.0 and 1.0."
                 )
 
-            state.session.knowledge_map[topic] = score
+            state.session.knowledge_map[topic] = mastery
 
         state.session.updated_at = datetime.now(
             timezone.utc
