@@ -33,6 +33,7 @@
     "globals": "^17.7.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
+    "vercel": "^58.9.0",
     "vite": "^8.2.0"
   }
 }
