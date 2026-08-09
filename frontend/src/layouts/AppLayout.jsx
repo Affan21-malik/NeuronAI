@@ -41,8 +41,10 @@ function AppLayoutContent() {
       setActiveTab('auth')
       return
     }
-    // Always reset so agent selection appears fresh
-    resetInterview()
+    // Only reset if an interview is completed or explicitly starting fresh
+    if (interviewStatus === 'COMPLETED' || interviewStatus === 'NOT_STARTED') {
+      resetInterview()
+    }
     setActiveTab('interview')
   }
 
@@ -74,11 +76,6 @@ function AppLayoutContent() {
     if (!publicTabs.includes(tabId) && !isAuthenticated) {
       setActiveTab('auth')
       return
-    }
-    // Navigating to interview tab from anywhere always resets
-    // so the agent selection screen appears fresh for a new interview.
-    if (tabId === 'interview') {
-      resetInterview()
     }
     setActiveTab(tabId)
   }

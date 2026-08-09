@@ -96,7 +96,18 @@ export function AuthProvider({ children }) {
       setIsLoading(true)
       const res = await authService.signUp({ firstName, lastName, email, password, confirmPassword })
       setPendingEmail(res.email)
-      setAuthStep('EMAIL_OTP')
+      if (res.user) {
+        setUser(res.user)
+      }
+      if (res.session) {
+        setIsAuthenticated(true)
+      }
+
+      if (res.isEmailConfirmationRequired) {
+        setAuthStep('SIGN_IN')
+      } else {
+        setAuthStep('EMAIL_OTP')
+      }
       setSuccessMessage(res.message)
       return res
     } catch (err) {
@@ -146,7 +157,7 @@ export function AuthProvider({ children }) {
     clearMessages()
     try {
       setIsLoading(true)
-      const res = await authService.setupProfile({ username, profilePhoto })
+      const res = await authService.setupProfile({ username, profilePhoto, user })
       setUser(res.user)
       setIsAuthenticated(true)
       setAuthStep('WELCOME')

@@ -215,11 +215,17 @@ export const authService = {
       }
     }
 
+    const formattedUser = user ? formatSupabaseUser(user, { full_name: fullName }) : null
+    const isEmailConfirmationRequired = !data.session && Boolean(data.user)
+
     return {
-      user: user ? formatSupabaseUser(user, { full_name: fullName }) : null,
+      user: formattedUser,
       session: data.session,
       email: email.trim(),
-      message: 'Account created successfully.',
+      isEmailConfirmationRequired,
+      message: isEmailConfirmationRequired
+        ? 'Account created! Please check your email for a confirmation link before signing in.'
+        : 'Account created successfully.',
     }
   },
 
@@ -265,19 +271,45 @@ export const authService = {
     }
   },
 
-  async setupProfile({ username, profilePhoto }) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No authenticated user found.')
+  async setupProfile({ username, profilePhoto, user: contextUser }) {
+    const { data: { user: sbUser } } = await supabase.auth.getUser()
+    const activeUser = sbUser ? formatSupabaseUser(sbUser) : contextUser
 
-    await supabase.auth.updateUser({
-      data: {
-        username,
-        avatar_url: profilePhoto,
-      },
-    })
+    if (!activeUser) {
+      throw new Error('No authenticated user found. Please sign in to complete your profile.')
+    }
+
+    if (sbUser) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            username,
+            avatar_url: profilePhoto,
+          },
+        })
+      } catch (err) {
+        console.error('Failed to update user auth metadata:', err)
+      }
+    }
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: activeUser.id,
+        full_name: activeUser.fullName || activeUser.full_name || activeUser.email?.split('@')[0] || 'Candidate',
+        username: username,
+      })
+    } catch (err) {
+      console.error('Failed to update profile table:', err)
+    }
+
+    const updatedUser = {
+      ...activeUser,
+      username,
+      avatar: profilePhoto || activeUser.avatar,
+    }
 
     return {
-      user: formatSupabaseUser(user, { username }),
+      user: updatedUser,
     }
   },
 

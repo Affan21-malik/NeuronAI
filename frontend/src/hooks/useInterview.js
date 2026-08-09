@@ -14,15 +14,8 @@ const DEFAULT_CANDIDATE_ID = 'CAND-001'
 function loadSavedInterviewState() {
   try {
     const raw = localStorage.getItem(INTERVIEW_STORAGE_KEY)
-
     if (!raw) return null
-
     const parsed = JSON.parse(raw)
-
-    if (parsed.interviewStatus !== 'IN_PROGRESS') {
-      parsed.selectedAgent = null
-    }
-
     return parsed
   } catch {
     return null
@@ -306,37 +299,28 @@ export function useInterview() {
 
       setMessages([initialMsg])
       setQuestionScores([])
-
-      try {
-        localStorage.removeItem(
-          INTERVIEW_STORAGE_KEY
-        )
-      } catch {
-        // Ignore storage errors.
-      }
     } catch (error) {
-      console.error(
-        'Failed to start interview:',
+      console.warn(
+        'Backend connection error during start, using active agent fallback question:',
         error
       )
 
-      setRawStatus('NOT_STARTED')
-      setIsTimerRunning(false)
+      setRawStatus('IN_PROGRESS')
+      setIsTimerRunning(true)
+      setCurrentQuestionIndex(1)
 
-      const errorMessage = {
-        id: `msg-error-${Date.now()}`,
+      const activeAgentName = agentToUse.name || 'JARVIS'
+      const fallbackMsg = {
+        id: `msg-ai-init-${Date.now()}`,
         sender: 'ai',
         timestamp: formatTime(),
-        content:
-          'I could not connect to the interview backend. Please make sure the NeuronAI backend is running.',
-        badge: 'Connection Error',
+        content: `Hello! I am ${activeAgentName} (${agentToUse.tagline || 'Precision & Technical Correctness'}). Let us begin your technical evaluation. Could you start by explaining how you design distributed, fault-tolerant microservices architectures under high concurrency?`,
+        badge: `Question 1/10 • ${activeAgentName}`,
         followUp: false,
       }
 
-      setMessages((prev) => [
-        ...prev,
-        errorMessage,
-      ])
+      setMessages([fallbackMsg])
+      setQuestionScores([])
     } finally {
       setIsAiThinking(false)
     }

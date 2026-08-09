@@ -519,7 +519,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -542,7 +542,7 @@ export default function AuthPage() {
                     type="button"
                     onClick={continueWithGoogle}
                     disabled={isLoading}
-                    className="w-full py-2.5 px-4 rounded-xl bg-slate-950/90 hover:bg-slate-800/80 border border-slate-800 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-2.5 hover:border-slate-700"
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-950/90 hover:bg-slate-800/80 border border-slate-800 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-2.5 hover:border-slate-700 cursor-pointer"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -558,7 +558,7 @@ export default function AuthPage() {
                   Don't have an account?{' '}
                   <button
                     onClick={() => setAuthStep('SIGN_UP')}
-                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors underline underline-offset-4"
+                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors underline underline-offset-4 cursor-pointer"
                   >
                     Sign Up
                   </button>
