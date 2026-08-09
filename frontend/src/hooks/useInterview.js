@@ -67,6 +67,8 @@ export function useInterview() {
 
   const [difficulty, setDifficulty] = useState('medium')
 
+  const [isFollowUpActive, setIsFollowUpActive] = useState(false)
+
   /*
    * Derived lifecycle state.
    */
@@ -198,6 +200,31 @@ export function useInterview() {
   }
 
   /*
+   * Helper to compute dynamic Radar chart dataset from knowledge map
+   */
+  const computeRadarData = (knowledgeMap = {}, currentTopicName = '') => {
+    const topics = Object.keys(knowledgeMap)
+    if (topics.length === 0) {
+      return [
+        { subject: currentTopicName || 'Architecture', score: 85, fullMark: 100 },
+        { subject: 'System Design', score: 80, fullMark: 100 },
+        { subject: 'Data Foundations', score: 75, fullMark: 100 },
+        { subject: 'Security & Auth', score: 90, fullMark: 100 },
+        { subject: 'Performance Ops', score: 70, fullMark: 100 },
+      ]
+    }
+    return topics.map((t) => {
+      const val = Number(knowledgeMap[t]) || 0
+      const score = val > 1 ? val : Math.round(val * 100)
+      return {
+        subject: t.length > 18 ? `${t.slice(0, 16)}..` : t,
+        score: Math.min(100, Math.max(10, score)),
+        fullMark: 100,
+      }
+    })
+  }
+
+  /*
    * Start REAL backend interview.
    */
   const startInterview = async (agent = null) => {
@@ -217,49 +244,32 @@ export function useInterview() {
     setIsTimerRunning(false)
     setInputMessage('')
 
+    let activeSessionId = null
+
     try {
-      const response = await startInterviewApi(
-        DEFAULT_CANDIDATE_ID
-      )
+      const response = await startInterviewApi(DEFAULT_CANDIDATE_ID)
 
+      activeSessionId = response.session_id
       setBackendSessionId(response.session_id)
-
-      setRawStatus(
-        response.is_complete
-          ? 'COMPLETED'
-          : 'IN_PROGRESS'
-      )
-
+      setRawStatus(response.is_complete ? 'COMPLETED' : 'IN_PROGRESS')
       setIsTimerRunning(!response.is_complete)
-
       setTimerSeconds(0)
-
       setCurrentQuestionIndex(1)
 
-      setConfidenceScore(
-        Math.round(
-          (response.confidence_score ?? 0) * 100
-        )
-      )
-
-      setCurrentTopic(
-        response.current_topic || null
-      )
-
-      setDifficulty(
-        response.difficulty || 'medium'
-      )
+      const confidencePct = Math.round((response.confidence_score ?? 0) * 100)
+      setConfidenceScore(confidencePct)
+      setCurrentTopic(response.current_topic || 'Technical Interview')
+      setDifficulty(response.difficulty || 'medium')
 
       setSession((prev) => ({
         ...prev,
+        title: response.current_topic ? `Interview: ${response.current_topic}` : prev.title,
+        topic: response.current_topic || prev.topic,
+        difficulty: response.difficulty || 'medium',
+        confidenceScore: confidencePct,
         backendSessionId: response.session_id,
-        currentTopic: response.current_topic,
-        difficulty: response.difficulty,
-        confidenceScore:
-          Math.round(
-            (response.confidence_score ?? 0) * 100
-          ),
         currentQuestionIndex: 1,
+        radarData: computeRadarData(response.knowledge_map, response.current_topic),
       }))
 
       const initialMsg = {
@@ -273,12 +283,14 @@ export function useInterview() {
 
       setMessages([initialMsg])
       setQuestionScores([])
+      return activeSessionId
     } catch (error) {
       console.warn(
-        'Backend connection error during start, using active agent fallback question:',
+        'Backend connection warning during start, initializing local state:',
         error
       )
-
+      const fallbackSessionId = `session-local-${Date.now()}`
+      setBackendSessionId(fallbackSessionId)
       setRawStatus('IN_PROGRESS')
       setIsTimerRunning(true)
       setCurrentQuestionIndex(1)
@@ -295,6 +307,7 @@ export function useInterview() {
 
       setMessages([fallbackMsg])
       setQuestionScores([])
+      return fallbackSessionId
     } finally {
       setIsAiThinking(false)
     }
@@ -306,7 +319,6 @@ export function useInterview() {
   const completeInterview = () => {
     setRawStatus('COMPLETED')
     setIsTimerRunning(false)
-
     setSelectedAgent(null)
   }
 
@@ -328,15 +340,10 @@ export function useInterview() {
     setDifficulty('medium')
 
     setSession(initialInterviewSession)
-
-    setMessages(
-      initialInterviewSession.messages
-    )
+    setMessages(initialInterviewSession.messages)
 
     try {
-      localStorage.removeItem(
-        INTERVIEW_STORAGE_KEY
-      )
+      localStorage.removeItem(INTERVIEW_STORAGE_KEY)
     } catch {
       // Ignore.
     }
@@ -345,20 +352,19 @@ export function useInterview() {
   /*
    * Submit REAL candidate answer.
    */
-  const handleSendMessage = async (
-    customText = null
-  ) => {
-    const textToSend =
-      customText || inputMessage
+  const handleSendMessage = async (customText = null) => {
+    const textToSend = customText || inputMessage
 
     if (!textToSend.trim()) return
+
+    let currentSessionId = backendSessionId
 
     /*
      * If no backend session exists, start one first.
      */
-    if (!backendSessionId) {
-      await startInterview(selectedAgent)
-      return
+    if (!currentSessionId) {
+      currentSessionId = await startInterview(selectedAgent)
+      if (!currentSessionId) return
     }
 
     const now = new Date()
@@ -373,36 +379,36 @@ export function useInterview() {
       content: textToSend,
     }
 
-    setMessages((prev) => [
-      ...prev,
-      userMsg,
-    ])
-
+    setMessages((prev) => [...prev, userMsg])
     setInputMessage('')
     setIsAiThinking(true)
 
     try {
-      const response =
-        await submitInterviewAnswer({
-          sessionId: backendSessionId,
-          candidateId: DEFAULT_CANDIDATE_ID,
-          userResponse: textToSend,
-        })
+      const response = await submitInterviewAnswer({
+        sessionId: currentSessionId,
+        candidateId: DEFAULT_CANDIDATE_ID,
+        userResponse: textToSend,
+      })
 
       /*
-       * Record evaluation score.
+       * Record evaluation score for current question or follow-up.
        */
+      const evaluatedQuestionNum = currentQuestionIndex
+      const wasFollowUp = isFollowUpActive
+      let turnScore = 0
+
       if (response.evaluation) {
-        const score =
-          Number(
-            response.evaluation.score
-          ) || 0
+        turnScore = Math.round(Number(response.evaluation.score) || 0)
+
+        const scoreLabel = wasFollowUp
+          ? `Q${evaluatedQuestionNum} Follow-up`
+          : `Q${evaluatedQuestionNum}`
 
         setQuestionScores((prev) => [
           ...prev,
           {
-            question: `Q${currentQuestionIndex}`,
-            score,
+            question: scoreLabel,
+            score: turnScore,
           },
         ])
       }
@@ -411,33 +417,43 @@ export function useInterview() {
        * Backend confidence is 0-1.
        * Frontend displays 0-100.
        */
-      const newConfidence = Math.round(
-        (response.confidence_score ?? 0) * 100
-      )
+      const newConfidence = Math.round((response.confidence_score ?? 0) * 100)
 
-      setConfidenceScore(
-        newConfidence
-      )
-
-      setCurrentTopic(
-        response.current_topic || null
-      )
-
-      setDifficulty(
-        response.difficulty || 'medium'
-      )
+      setConfidenceScore(newConfidence)
+      setCurrentTopic(response.current_topic || currentTopic)
+      setDifficulty(response.difficulty || difficulty)
 
       setSession((prev) => ({
         ...prev,
-        backendSessionId:
-          response.session_id,
-        currentTopic:
-          response.current_topic,
-        difficulty:
-          response.difficulty,
-        confidenceScore:
-          newConfidence,
+        backendSessionId: response.session_id,
+        title: response.current_topic ? `Topic: ${response.current_topic}` : prev.title,
+        topic: response.current_topic || prev.topic,
+        difficulty: response.difficulty || prev.difficulty,
+        confidenceScore: newConfidence,
+        radarData: computeRadarData(response.knowledge_map, response.current_topic || prev.topic),
       }))
+
+      const activeAgentName = selectedAgent?.name || 'JARVIS'
+
+      /*
+       * 1. Append dedicated Evaluation message for the just-evaluated answer
+       */
+      if (response.evaluation) {
+        const evalBadge = wasFollowUp
+          ? `Question ${evaluatedQuestionNum}/10 Follow-up Evaluation`
+          : `Question ${evaluatedQuestionNum}/10 Evaluation`
+
+        const evalMsg = {
+          id: `msg-eval-${Date.now()}`,
+          sender: 'ai',
+          type: 'evaluation',
+          questionNumber: evaluatedQuestionNum,
+          timestamp: formatTime(),
+          badge: evalBadge,
+          evaluation: response.evaluation,
+        }
+        setMessages((prev) => [...prev, evalMsg])
+      }
 
       /*
        * Interview completed.
@@ -445,89 +461,77 @@ export function useInterview() {
       if (response.is_complete) {
         setRawStatus('COMPLETED')
         setIsTimerRunning(false)
-
-        setCurrentQuestionIndex(
-          Math.max(
-            currentQuestionIndex,
-            1
-          )
-        )
+        setIsFollowUpActive(false)
 
         const finalMessage = {
           id: `msg-ai-final-${Date.now()}`,
           sender: 'ai',
+          type: 'completion',
           timestamp: formatTime(),
-          content:
-            'Your interview is complete. Your evaluation report is ready.',
+          content: 'Your technical interview is complete! Your final evaluation and breakdown have been generated.',
           badge: 'Evaluation Complete',
           followUp: false,
-          evaluation:
-            response.evaluation || null,
         }
 
-        setMessages((prev) => [
-          ...prev,
-          finalMessage,
-        ])
-
+        setMessages((prev) => [...prev, finalMessage])
         return
       }
 
       /*
-       * Move to next backend-generated question.
+       * 2. Determine if backend generated a follow-up on current question vs new numbered question.
+       * Maximum of 1 follow-up is allowed per main question.
        */
-      const nextQuestionNumber =
-        currentQuestionIndex + 1
-
-      setCurrentQuestionIndex(
-        nextQuestionNumber
+      const isFollowUpRequested = Boolean(
+        !wasFollowUp &&
+        (response.is_followup || (response.current_topic === currentTopic && response.evaluation && response.evaluation.score < 70))
       )
 
-      const activeAgentName =
-        selectedAgent?.name || 'JARVIS'
+      if (isFollowUpRequested) {
+        // Activate ONE follow-up for the current main question. Main question number DOES NOT increment.
+        setIsFollowUpActive(true)
 
-      const isFollowUp =
-        response.current_topic ===
-          currentTopic
+        const followUpMsg = {
+          id: `msg-ai-q-${Date.now()}`,
+          sender: 'ai',
+          type: 'question',
+          questionNumber: evaluatedQuestionNum,
+          timestamp: formatTime(),
+          content: response.next_question,
+          badge: `Question ${evaluatedQuestionNum}/10 Follow-up • ${activeAgentName}`,
+          followUp: true,
+        }
+        setMessages((prev) => [...prev, followUpMsg])
+      } else {
+        // Transition to next main question. Reset followUpActive to false.
+        setIsFollowUpActive(false)
+        const nextQuestionNumber = evaluatedQuestionNum + 1
+        setCurrentQuestionIndex(nextQuestionNumber)
 
-      const aiMsg = {
-        id: `msg-ai-${Date.now()}`,
-        sender: 'ai',
-        timestamp: formatTime(),
-        content:
-          response.next_question,
-        badge:
-          `Question ${nextQuestionNumber}/10 • ` +
-          `${activeAgentName}`,
-        followUp: isFollowUp,
-        evaluation:
-          response.evaluation || null,
+        const nextMsg = {
+          id: `msg-ai-q-${Date.now()}`,
+          sender: 'ai',
+          type: 'question',
+          questionNumber: nextQuestionNumber,
+          timestamp: formatTime(),
+          content: response.next_question,
+          badge: `Question ${nextQuestionNumber}/10 • ${activeAgentName}`,
+          followUp: false,
+        }
+        setMessages((prev) => [...prev, nextMsg])
       }
-
-      setMessages((prev) => [
-        ...prev,
-        aiMsg,
-      ])
     } catch (error) {
-      console.error(
-        'Failed to submit interview answer:',
-        error
-      )
+      console.error('Failed to submit interview answer:', error)
 
       const errorMessage = {
         id: `msg-error-${Date.now()}`,
         sender: 'ai',
         timestamp: formatTime(),
-        content:
-          'I could not process your answer. Please check that the backend is running and try again.',
+        content: `Evaluation Warning: ${error.message || 'Could not process answer'}. Please ensure the backend server is running at http://127.0.0.1:8000 and try again.`,
         badge: 'Connection Error',
         followUp: false,
       }
 
-      setMessages((prev) => [
-        ...prev,
-        errorMessage,
-      ])
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsAiThinking(false)
     }

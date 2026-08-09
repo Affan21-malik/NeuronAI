@@ -32,7 +32,7 @@ class FollowupEngine:
 
     def __init__(
         self,
-        max_followups_per_topic: int = 2,
+        max_followups_per_topic: int = 1,
         clarity_threshold: float = 7.0,
         depth_threshold: float = 7.0,
     ) -> None:

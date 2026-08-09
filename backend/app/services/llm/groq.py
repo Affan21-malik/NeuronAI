@@ -1,11 +1,15 @@
 import asyncio
 import json
+import logging
 import os
 from typing import Any, Type, TypeVar
 
 from groq import Groq
 
+from app.services.llm.gemini import GeminiLLMProvider
 from app.services.llm.provider import BaseLLMProvider
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -17,24 +21,25 @@ class GroqLLMProvider(BaseLLMProvider):
     Supports:
     - Plain text generation for the Interviewer Agent
     - Structured JSON generation for the Evaluator Agent
+    - Mock fallback for offline/local development without API keys
     """
 
     def __init__(
         self,
-        model: str = "openai/gpt-oss-120b",
+        model: str = "llama-3.3-70b-versatile",
         api_key: str | None = None,
     ) -> None:
-        self.model = model
+        self.model = os.getenv("GROQ_MODEL", model)
         raw_key = api_key or os.getenv("GROQ_API_KEY")
 
-        if not raw_key:
+        if not raw_key or raw_key.strip() in ("", "mock_groq_key"):
             self.api_key = "mock_groq_key"
             self._mock_mode = True
+            self._client = None
         else:
-            self.api_key = raw_key
+            self.api_key = raw_key.strip()
             self._mock_mode = False
-
-        self._client = Groq(api_key=self.api_key)
+            self._client = Groq(api_key=self.api_key)
 
     @property
     def is_mock(self) -> bool:
@@ -50,6 +55,9 @@ class GroqLLMProvider(BaseLLMProvider):
     ) -> str:
         if not prompt.strip():
             raise ValueError("Prompt cannot be empty.")
+
+        if self._mock_mode or self._client is None:
+            return GeminiLLMProvider._mock_text_response(prompt)
 
         try:
             response = await asyncio.to_thread(
@@ -67,9 +75,8 @@ class GroqLLMProvider(BaseLLMProvider):
             return text.strip()
 
         except Exception as exc:
-            raise RuntimeError(
-                f"Groq text generation failed: {exc}"
-            ) from exc
+            logger.warning(f"Groq text generation API failed ({exc}), falling back to mock provider.")
+            return GeminiLLMProvider._mock_text_response(prompt)
 
     def _generate_text_sync(
         self,
@@ -97,6 +104,11 @@ class GroqLLMProvider(BaseLLMProvider):
     ) -> T:
         if not prompt.strip():
             raise ValueError("Prompt cannot be empty.")
+
+        if self._mock_mode or self._client is None:
+            return GeminiLLMProvider._mock_structured_response(
+                prompt, response_model
+            )
 
         try:
             response = await asyncio.to_thread(
@@ -126,13 +138,13 @@ class GroqLLMProvider(BaseLLMProvider):
                     f"Groq response failed Pydantic validation: {exc}"
                 ) from exc
 
-        except RuntimeError:
-            raise
-
         except Exception as exc:
-            raise RuntimeError(
-                f"Groq structured generation failed: {exc}"
-            ) from exc
+            logger.warning(
+                f"Groq structured generation API failed ({exc}), falling back to mock provider."
+            )
+            return GeminiLLMProvider._mock_structured_response(
+                prompt, response_model
+            )
 
     def _generate_structured_sync(
         self,

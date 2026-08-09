@@ -259,3 +259,108 @@ def test_multi_turn_session_persistence(setup_mock_provider: MockTestLLMProvider
     assert second["confidence_score"] == pytest.approx(0.90)
     assert second["next_question"]
     assert second["current_topic"]
+
+
+def test_groq_mock_mode_end_to_end_loop():
+    """Verify 3 turns using default Groq provider without API key."""
+    from app.services.llm.groq import GroqLLMProvider
+
+    groq_provider = GroqLLMProvider(api_key=None)
+    engine.set_llm_provider(groq_provider)
+
+    # Turn 1: Start interview
+    res1 = client.post(INTERVIEW_ENDPOINT, json={"candidate_id": "CAND-001"})
+    assert res1.status_code == 200
+    data1 = res1.json()
+    session_id = data1["session_id"]
+    assert data1["next_question"]
+
+    # Turn 2: Submit candidate answer 1
+    res2 = client.post(
+        INTERVIEW_ENDPOINT,
+        json={
+            "session_id": session_id,
+            "candidate_id": "CAND-001",
+            "user_response": "I would implement vector search with HNSW indexing and reciprocal rank fusion reranking.",
+        },
+    )
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["session_id"] == session_id
+    assert data2["evaluation"] is not None
+    assert "score" in data2["evaluation"]
+    assert data2["next_question"]
+
+    # Turn 3: Submit candidate answer 2
+    res3 = client.post(
+        INTERVIEW_ENDPOINT,
+        json={
+            "session_id": session_id,
+            "candidate_id": "CAND-001",
+            "user_response": "To mitigate latency, I would use sliding window context compression and async batching.",
+        },
+    )
+    assert res3.status_code == 200
+    data3 = res3.json()
+    assert data3["session_id"] == session_id
+    assert data3["evaluation"] is not None
+    assert data3["next_question"]
+
+
+def test_max_one_followup_limit(setup_mock_provider: MockTestLLMProvider):
+    """Verify that a maximum of ONE follow-up is generated per main question, even if follow-up answer is weak."""
+    async def low_score_handler(prompt, response_model):
+        return response_model(
+            technical_accuracy="LOW",
+            concept_depth="LOW",
+            practical_understanding="LOW",
+            engineering_reasoning="LOW",
+            communication="LOW",
+            confidence="LOW",
+            topic_coverage="LOW",
+            strengths=[],
+            improvements=["Need deeper knowledge"],
+            recommended_action="FOLLOW_UP",
+            reason="Weak answer needs probing.",
+            internal_evaluation_score=40.0,
+            suggested_probe_area="Core principles",
+        )
+
+    setup_mock_provider.custom_handler = low_score_handler
+
+    # Q1 Initial
+    res1 = client.post(INTERVIEW_ENDPOINT, json={"candidate_id": "CAND-001"})
+    assert res1.status_code == 200
+    q1 = res1.json()
+    session_id = q1["session_id"]
+    topic1 = q1["current_topic"]
+
+    # Q1 Answer (Weak) -> First follow-up should be generated
+    res2 = client.post(
+        INTERVIEW_ENDPOINT,
+        json={
+            "session_id": session_id,
+            "candidate_id": "CAND-001",
+            "user_response": "I don't know.",
+        },
+    )
+    assert res2.status_code == 200
+    eval1 = res2.json()
+    assert eval1["is_followup"] is True
+    assert eval1["current_topic"] == topic1
+
+    # Q1 Follow-up Answer (Weak again!) -> Backend MUST limit follow-up to 1 and transition to new topic!
+    res3 = client.post(
+        INTERVIEW_ENDPOINT,
+        json={
+            "session_id": session_id,
+            "candidate_id": "CAND-001",
+            "user_response": "I still don't know.",
+        },
+    )
+    assert res3.status_code == 200
+    eval2 = res3.json()
+    assert eval2["is_followup"] is False
+    assert eval2["current_topic"] != topic1
+
+

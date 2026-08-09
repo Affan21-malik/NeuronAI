@@ -223,6 +223,88 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth">
           <AnimatePresence>
             {messages.map((msg) => {
+              if (msg.type === 'evaluation') {
+                return (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex gap-3 sm:gap-4 max-w-3xl my-2"
+                  >
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-xl p-[1px] shrink-0 shadow-md bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+                      <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                      </div>
+                    </div>
+
+                    {/* Evaluation Content */}
+                    <div className="space-y-1.5 max-w-2xl flex-1">
+                      <div className="flex items-center gap-2 text-xs font-semibold">
+                        <span className="text-indigo-400 font-bold">AI Evaluation Engine</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          {msg.badge || `Question ${msg.questionNumber || 1}/10 Evaluation`}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">{msg.timestamp}</span>
+                      </div>
+
+                      <div className="p-4 sm:p-5 rounded-3xl bg-indigo-950/80 border border-indigo-500/30 text-slate-100 shadow-md space-y-3">
+                        <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2.5">
+                          <span className="font-bold text-indigo-200 text-xs sm:text-sm flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-amber-400" />
+                            Candidate Evaluation Result
+                          </span>
+                          <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 font-extrabold text-xs sm:text-sm border border-emerald-500/40 shadow-sm">
+                            Score: {Math.round(msg.evaluation?.score ?? 0)} / 100
+                          </span>
+                        </div>
+
+                        {msg.evaluation?.feedback && (
+                          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic font-medium">
+                            "{msg.evaluation.feedback}"
+                          </p>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[10px] sm:text-xs">
+                          <div className="p-2 rounded-xl bg-slate-900/80 border border-indigo-500/15 text-center">
+                            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Correctness</span>
+                            <span className="font-bold text-indigo-300 text-xs sm:text-sm">{Math.round(msg.evaluation?.correctness ?? 0)}%</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-slate-900/80 border border-indigo-500/15 text-center">
+                            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Depth</span>
+                            <span className="font-bold text-purple-300 text-xs sm:text-sm">{Math.round(msg.evaluation?.depth ?? 0)}%</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-slate-900/80 border border-indigo-500/15 text-center">
+                            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Clarity</span>
+                            <span className="font-bold text-cyan-300 text-xs sm:text-sm">{Math.round(msg.evaluation?.clarity ?? 0)}%</span>
+                          </div>
+                        </div>
+
+                        {((msg.evaluation?.strengths && msg.evaluation.strengths.length > 0) ||
+                          (msg.evaluation?.weaknesses && msg.evaluation.weaknesses.length > 0)) && (
+                          <div className="pt-2 space-y-1.5 text-xs border-t border-indigo-500/15">
+                            {msg.evaluation?.strengths && msg.evaluation.strengths.length > 0 && (
+                              <div className="text-emerald-400 font-medium">
+                                <span className="font-bold">✓ Strengths: </span>
+                                {msg.evaluation.strengths.join(', ')}
+                              </div>
+                            )}
+                            {msg.evaluation?.weaknesses && msg.evaluation.weaknesses.length > 0 && (
+                              <div className="text-amber-400 font-medium">
+                                <span className="font-bold">△ Growth Areas: </span>
+                                {msg.evaluation.weaknesses.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              }
+
               const isAi = msg.sender === 'ai'
               return (
                 <motion.div

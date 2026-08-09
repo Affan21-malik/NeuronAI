@@ -910,6 +910,7 @@ class InterviewEngine:
                 session.confidence_score
             ),
             is_complete=session.is_complete,
+            is_followup=is_followup,
         )
 
     # =============================================================

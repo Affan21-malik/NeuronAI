@@ -59,3 +59,5 @@ class InterviewResponse(BaseModel):
     )
 
     is_complete: bool = False
+
+    is_followup: bool = False
