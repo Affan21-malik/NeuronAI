@@ -43,7 +43,7 @@ class EvaluationResult(BaseModel):
         default_factory=list
     )
 
-    recommended_action: RecommendedAction
+    recommended_action: RecommendedAction = RecommendedAction.MOVE_NEXT
 
     reason: str
 

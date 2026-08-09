@@ -1,8 +1,9 @@
 from __future__ import annotations
+import os
 
 import json
 from uuid import uuid4
-
+from app.services.llm.provider import BaseLLMProvider
 from app.models.candidate import ExperienceLevel
 from app.models.request import InterviewRequest
 from app.models.response import (
@@ -29,13 +30,15 @@ from app.services.interview.prompt_loader import PromptLoader
 from app.services.interview.question_generator import (
     QuestionGenerator,
 )
-from app.services.knowledge.mapper import KnowledgeMapper
 from app.services.llm.gemini import GeminiLLMProvider
+from app.services.knowledge.mapper import KnowledgeMapper
+from app.services.llm.groq import GroqLLMProvider
 from app.services.memory.manager import MemoryManager
 from app.services.reports.generator import (
     FeedbackReport,
     ReportGenerator,
 )
+
 
 
 class InterviewEngine:
@@ -90,6 +93,7 @@ class InterviewEngine:
         self,
         memory_manager: MemoryManager | None = None,
         evaluator: AnswerEvaluator | None = None,
+        llm_provider: BaseLLMProvider | None = None,
         knowledge_mapper: KnowledgeMapper | None = None,
         difficulty_manager: DifficultyManager | None = None,
         followup_engine: FollowupEngine | None = None,
@@ -105,7 +109,18 @@ class InterviewEngine:
         # Shared infrastructure
         # ---------------------------------------------------------
 
-        self.llm_provider = GeminiLLMProvider()
+        provider = os.getenv("LLM_PROVIDER", "groq").lower()
+
+        if llm_provider is not None:
+            self.llm_provider = llm_provider
+        elif provider == "groq":
+            self.llm_provider = GroqLLMProvider()
+        elif provider == "gemini":
+            self.llm_provider = GeminiLLMProvider()
+        else:
+            raise ValueError(
+                f"Unsupported LLM provider: {provider}"
+            )
 
         self.prompt_loader = PromptLoader()
 

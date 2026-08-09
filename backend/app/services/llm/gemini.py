@@ -199,7 +199,7 @@ class GeminiLLMProvider(BaseLLMProvider):
             "followup_mode=true" in lowered
             or "followup_mode=true" in lowered.replace(" ", "")
         )
-        
+
         if is_followup:
             return (
                 f"What specific aspect of {topic} would you "
@@ -269,23 +269,20 @@ class GeminiLLMProvider(BaseLLMProvider):
         response_model: Type[T],
     ) -> T:
         """
-        Deterministic evaluation mock.
-
-        IMPORTANT:
-        Only the candidate's actual answer is inspected.
-        Evaluation instructions and rubric text are ignored.
+        Deterministic structured-output mock used when Gemini is
+        unavailable.
+    
+        The mock evaluates the candidate answer and produces a
+        response compatible with the requested Pydantic schema.
         """
-
-        candidate_answer = cls._extract_candidate_answer(
-            prompt
-        )
-
+    
+        candidate_answer = cls._extract_candidate_answer(prompt)
         lowered_answer = candidate_answer.lower().strip()
-
+    
         # --------------------------------------------------------
         # Weak answers
         # --------------------------------------------------------
-
+    
         weak_markers = [
             "don't know",
             "dont know",
@@ -295,11 +292,11 @@ class GeminiLLMProvider(BaseLLMProvider):
             "i have no idea",
             "i don't know",
         ]
-
+    
         # --------------------------------------------------------
         # Strong technical reasoning
         # --------------------------------------------------------
-
+    
         strong_markers = [
             "trade-off",
             "tradeoff",
@@ -315,16 +312,17 @@ class GeminiLLMProvider(BaseLLMProvider):
             "replication",
             "throughput",
         ]
-
+    
         # --------------------------------------------------------
-        # Determine score
+        # Determine evaluation
         # --------------------------------------------------------
-
+    
         if not lowered_answer:
             score = 40.0
             clarity = 4.0
             depth = 3.0
-
+            action = "SIMPLIFY"
+    
         elif any(
             marker in lowered_answer
             for marker in weak_markers
@@ -332,7 +330,8 @@ class GeminiLLMProvider(BaseLLMProvider):
             score = 45.0
             clarity = 5.0
             depth = 4.0
-
+            action = "FOLLOW_UP"
+    
         elif sum(
             marker in lowered_answer
             for marker in strong_markers
@@ -340,7 +339,8 @@ class GeminiLLMProvider(BaseLLMProvider):
             score = 90.0
             clarity = 9.0
             depth = 9.0
-
+            action = "DEEPER"
+    
         elif any(
             marker in lowered_answer
             for marker in strong_markers
@@ -348,33 +348,71 @@ class GeminiLLMProvider(BaseLLMProvider):
             score = 80.0
             clarity = 8.0
             depth = 8.0
-
+            action = "DEEPER"
+    
         else:
             score = 70.0
             clarity = 7.0
             depth = 7.0
-
+            action = "MOVE_NEXT"
+    
         # --------------------------------------------------------
-        # Build response according to requested Pydantic model
+        # Build response
         # --------------------------------------------------------
-
+    
         values: dict[str, object] = {}
-
-        for field_name, model_field in (
-            response_model.model_fields.items()
-        ):
-            if field_name == "score":
-                values[field_name] = score
-
-            elif field_name == "clarity":
-                values[field_name] = clarity
-
-            elif field_name == "depth":
-                values[field_name] = depth
-
-            elif field_name == "misconceptions":
-                values[field_name] = []
-
+    
+        for field_name in response_model.model_fields:
+        
+            if field_name == "technical_accuracy":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "concept_depth":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "practical_understanding":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "engineering_reasoning":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "communication":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "confidence":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
+            elif field_name == "topic_coverage":
+                values[field_name] = (
+                    "LOW" if score < 60
+                    else "MEDIUM" if score < 85
+                    else "HIGH"
+                )
+    
             elif field_name == "strengths":
                 if score >= 85:
                     values[field_name] = [
@@ -387,8 +425,8 @@ class GeminiLLMProvider(BaseLLMProvider):
                     ]
                 else:
                     values[field_name] = []
-
-            elif field_name == "weaknesses":
+    
+            elif field_name == "improvements":
                 if score < 60:
                     values[field_name] = [
                         "Insufficient technical depth",
@@ -400,32 +438,76 @@ class GeminiLLMProvider(BaseLLMProvider):
                     ]
                 else:
                     values[field_name] = []
-
-            elif field_name == "feedback":
-                if score >= 85:
+    
+            elif field_name == "recommended_action":
+                values[field_name] = action
+    
+            elif field_name == "reason":
+                if action == "FOLLOW_UP":
                     values[field_name] = (
-                        "Strong technical answer with clear "
-                        "reasoning and relevant trade-offs."
+                        "The response demonstrates limited "
+                        "understanding and requires further probing."
                     )
-                elif score >= 70:
+                elif action == "SIMPLIFY":
                     values[field_name] = (
-                        "Reasonable answer with some technical "
-                        "understanding, but further depth is possible."
+                        "The response does not demonstrate enough "
+                        "understanding to proceed at the current level."
+                    )
+                elif action == "DEEPER":
+                    values[field_name] = (
+                        "The response demonstrates strong technical "
+                        "reasoning and supports deeper exploration."
                     )
                 else:
                     values[field_name] = (
-                        "Answer shows partial understanding "
-                        "and requires further probing."
+                        "The candidate has provided sufficient evidence "
+                        "to move to the next topic."
                     )
-
+    
+            elif field_name == "internal_evaluation_score":
+                values[field_name] = score
+    
+            elif field_name == "suggested_probe_area":
+                if action in {"FOLLOW_UP", "SIMPLIFY"}:
+                    values[field_name] = "Fundamental understanding"
+                elif action == "DEEPER":
+                    values[field_name] = "Technical trade-offs"
+                else:
+                    values[field_name] = None
+    
+            elif field_name == "score":
+                values[field_name] = score
+    
+            elif field_name == "clarity":
+                values[field_name] = clarity
+    
+            elif field_name == "depth":
+                values[field_name] = depth
+    
+            elif field_name == "misconceptions":
+                values[field_name] = []
+    
+            elif field_name == "weaknesses":
+                values[field_name] = (
+                    ["Insufficient technical depth"]
+                    if score < 60
+                    else []
+                )
+    
+            elif field_name == "feedback":
+                values[field_name] = (
+                    "Strong technical answer with clear reasoning."
+                    if score >= 85
+                    else "Answer requires further technical exploration."
+                )
+    
             else:
                 values[field_name] = cls._mock_field_value(
-                    model_field.annotation
+                    response_model.model_fields[field_name].annotation
                 )
-
+    
         return response_model.model_validate(values)
-
-    # ============================================================
+        # ============================================================
     # PROMPT PARSING HELPERS
     # ============================================================
 

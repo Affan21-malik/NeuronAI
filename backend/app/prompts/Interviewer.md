@@ -716,3 +716,40 @@ Do not return:
 The interviewer message must contain at most one primary question or one follow-up question.
 
 The application layer is responsible for storing the conversation state and transcript.
+
+## Strict Output Format
+
+For this application, the interviewer output MUST be exactly one
+information-seeking interview question.
+
+The output MUST:
+
+- contain exactly ONE question
+- end with exactly one question mark (?)
+- contain no introduction
+- contain no explanation
+- contain no analysis
+- contain no markdown
+- contain no bullets
+- contain no quotation marks around the question
+- contain no answer or hints
+- contain no additional text before or after the question
+
+Return ONLY the question text.
+
+Examples of valid output:
+
+How would you handle a database failure in this architecture?
+
+What trade-offs would you consider when choosing horizontal scaling?
+
+How would you verify that your caching strategy improves system performance?
+
+Examples of invalid output:
+
+Here is my question: How would you handle a database failure?
+
+How would you handle a database failure? Let me know your thoughts.
+
+```text
+How would you handle a database failure?
