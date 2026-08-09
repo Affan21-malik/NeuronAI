@@ -17,7 +17,7 @@ export default function AgentSelectionScreen({ onSelectAndStart }) {
   const selectedAgent = AI_AGENTS.find((a) => a.id === selectedAgentId)
 
   const handleStart = () => {
-    if (!selectedAgent) return
+    if (!selectedAgent || selectedAgent.disabled) return
     onSelectAndStart(selectedAgent)
   }
 
@@ -48,33 +48,46 @@ export default function AgentSelectionScreen({ onSelectAndStart }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-8">
         {AI_AGENTS.map((agent) => {
           const Icon = agent.icon
+          const isDisabled = !!agent.disabled
           const isSelected = selectedAgentId === agent.id
 
           return (
             <motion.div
               key={agent.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setSelectedAgentId(agent.id)}
-              className={`relative rounded-3xl p-6 cursor-pointer transition-all duration-300 flex flex-col justify-between border ${
-                isSelected
-                  ? `bg-slate-900/95 ${agent.colorTheme.borderGlow} ${agent.colorTheme.ring}`
-                  : `bg-slate-950/60 border-indigo-500/15 hover:border-indigo-500/40 hover:bg-slate-900/40`
+              whileHover={isDisabled ? {} : { scale: 1.02 }}
+              whileTap={isDisabled ? {} : { scale: 0.98 }}
+              onClick={() => {
+                if (!isDisabled) {
+                  setSelectedAgentId(agent.id)
+                }
+              }}
+              className={`relative rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between border ${
+                isDisabled
+                  ? 'bg-slate-950/40 border-slate-800/60 opacity-60 cursor-not-allowed'
+                  : isSelected
+                    ? `bg-slate-900/95 ${agent.colorTheme.borderGlow} ${agent.colorTheme.ring} cursor-pointer`
+                    : `bg-slate-950/60 border-indigo-500/15 hover:border-indigo-500/40 hover:bg-slate-900/40 cursor-pointer`
               }`}
             >
-              {/* Header Icon & Selection Indicator */}
+              {/* Header Icon & Selection / Disabled Status Indicator */}
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-2xl ${agent.colorTheme.badgeBg} flex items-center justify-center`}>
                   <Icon className={`w-6 h-6 ${agent.colorTheme.textAccent}`} />
                 </div>
                 
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
-                  isSelected 
-                    ? `${agent.colorTheme.border} ${agent.colorTheme.badgeBg} text-white shadow-md` 
-                    : 'border-slate-700 bg-slate-900/50 text-transparent'
-                }`}>
-                  <CheckCircle2 className="w-4 h-4 fill-current" />
-                </div>
+                {isDisabled ? (
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wide uppercase shadow-sm">
+                    Coming Soon...
+                  </span>
+                ) : (
+                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+                    isSelected 
+                      ? `${agent.colorTheme.border} ${agent.colorTheme.badgeBg} text-white shadow-md` 
+                      : 'border-slate-700 bg-slate-900/50 text-transparent'
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4 fill-current" />
+                  </div>
+                )}
               </div>
 
               {/* Agent Name & Tagline */}
@@ -129,21 +142,21 @@ export default function AgentSelectionScreen({ onSelectAndStart }) {
       >
         <button
           onClick={handleStart}
-          disabled={!selectedAgentId}
+          disabled={!selectedAgentId || selectedAgent?.disabled}
           className={`w-full py-4 px-8 rounded-2xl font-extrabold text-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-xl ${
-            selectedAgentId
+            selectedAgentId && !selectedAgent?.disabled
               ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
               : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60'
           }`}
         >
-          <span>{selectedAgentId ? `Start Interview with ${selectedAgent?.name}` : 'Select an AI Interviewer to Begin'}</span>
-          <ArrowRight className={`w-4 h-4 ${selectedAgentId ? 'text-white' : 'text-slate-600'}`} />
+          <span>{selectedAgentId && !selectedAgent?.disabled ? `Start Interview with ${selectedAgent?.name}` : 'Select an AI Interviewer to Begin'}</span>
+          <ArrowRight className={`w-4 h-4 ${selectedAgentId && !selectedAgent?.disabled ? 'text-white' : 'text-slate-600'}`} />
         </button>
 
         <p className="text-[11px] text-slate-500 font-mono">
-          {selectedAgentId 
+          {selectedAgentId && !selectedAgent?.disabled
             ? `Interviewer Persona [${selectedAgent?.name}] selected for this session.` 
-            : 'Select one persona card above to enable the Start Interview button.'}
+            : 'Select an active persona card above to enable the Start Interview button.'}
         </p>
       </motion.div>
 

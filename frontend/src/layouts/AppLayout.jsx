@@ -36,15 +36,22 @@ function AppLayoutContent() {
   const interviewHook = useInterview()
   const { interviewStatus, startInterview, completeInterview, resetInterview } = interviewHook
 
+  // Track previous tab to reset session state when user leaves the interview section
+  const prevTabRef = React.useRef(activeTab)
+
+  React.useEffect(() => {
+    if (prevTabRef.current === 'interview' && activeTab !== 'interview') {
+      resetInterview()
+    }
+    prevTabRef.current = activeTab
+  }, [activeTab, resetInterview])
+
   const handleStartInterviewAction = () => {
     if (!isAuthenticated) {
       setActiveTab('auth')
       return
     }
-    // Only reset if an interview is completed or explicitly starting fresh
-    if (interviewStatus === 'COMPLETED' || interviewStatus === 'NOT_STARTED') {
-      resetInterview()
-    }
+    resetInterview()
     setActiveTab('interview')
   }
 
@@ -75,6 +82,10 @@ function AppLayoutContent() {
     const publicTabs = ['landing', 'auth']
     if (!publicTabs.includes(tabId) && !isAuthenticated) {
       setActiveTab('auth')
+      return
+    }
+    if (tabId === 'interview') {
+      handleStartInterviewAction()
       return
     }
     setActiveTab(tabId)

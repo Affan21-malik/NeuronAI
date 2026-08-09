@@ -30,6 +30,8 @@ export const AI_AGENTS = [
   {
     id: 'friday',
     name: 'FRIDAY',
+    disabled: true,
+    comingSoon: true,
     tagline: 'Adaptability & Conversation',
     personality: 'Responsive, adaptive, observant, context-aware, supportive.',
     communication: 'Natural, conversational, clear.',
@@ -52,6 +54,8 @@ export const AI_AGENTS = [
   {
     id: 'ultron',
     name: 'ULTRON',
+    disabled: true,
+    comingSoon: true,
     tagline: 'Depth & Technical Challenge',
     personality: 'Highly analytical, autonomous, persistent, confident, skeptical.',
     communication: 'Direct, assertive, analytical.',

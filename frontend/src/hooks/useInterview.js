@@ -30,78 +30,51 @@ function formatTime() {
 }
 
 export function useInterview() {
-  const saved = loadSavedInterviewState()
+  const [rawStatus, setRawStatus] = useState('NOT_STARTED')
 
-  const [rawStatus, setRawStatus] = useState(
-    () => saved?.interviewStatus || 'NOT_STARTED'
-  )
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
-    () => saved?.currentQuestionIndex ?? 0
-  )
+  const [session, setSession] = useState(initialInterviewSession)
 
-  const [session, setSession] = useState(
-    saved?.session || initialInterviewSession
-  )
+  const [messages, setMessages] = useState(initialInterviewSession.messages)
 
-  const [messages, setMessages] = useState(
-    () => saved?.messages || initialInterviewSession.messages
-  )
-
-  const [selectedAgent, setSelectedAgent] = useState(
-    () => saved?.selectedAgent || null
-  )
+  const [selectedAgent, setSelectedAgent] = useState(null)
 
   const [isAiThinking, setIsAiThinking] = useState(false)
 
-  const [timerSeconds, setTimerSeconds] = useState(
-    () => saved?.timerSeconds || 0
-  )
+  const [timerSeconds, setTimerSeconds] = useState(0)
 
-  const [isTimerRunning, setIsTimerRunning] = useState(
-    () => saved?.interviewStatus === 'IN_PROGRESS'
-  )
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
 
   const [inputMessage, setInputMessage] = useState('')
 
-  const [isRecordingVoice, setIsRecordingVoice] =
-    useState(false)
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false)
 
-  const [isCodeModalOpen, setIsCodeModalOpen] =
-    useState(false)
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false)
 
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] =
-    useState(false)
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
 
-  const [confidenceScore, setConfidenceScore] = useState(
-    () => saved?.confidenceScore ?? 0
-  )
+  const [confidenceScore, setConfidenceScore] = useState(0)
 
-  const [questionScores, setQuestionScores] = useState(
-    () => saved?.questionScores || []
-  )
+  const [questionScores, setQuestionScores] = useState([])
 
   /*
    * Backend session state.
    */
-  const [backendSessionId, setBackendSessionId] = useState(
-    () => saved?.backendSessionId || null
-  )
+  const [backendSessionId, setBackendSessionId] = useState(null)
 
-  const [currentTopic, setCurrentTopic] = useState(
-    () => saved?.currentTopic || null
-  )
+  const [currentTopic, setCurrentTopic] = useState(null)
 
-  const [difficulty, setDifficulty] = useState(
-    () => saved?.difficulty || 'medium'
-  )
+  const [difficulty, setDifficulty] = useState('medium')
 
   /*
    * Derived lifecycle state.
    */
   let interviewStatus = rawStatus
 
-  if (rawStatus === 'COMPLETED') {
+  if (!selectedAgent) {
+    interviewStatus = 'NOT_STARTED'
+  } else if (rawStatus === 'COMPLETED') {
     interviewStatus = 'COMPLETED'
   } else if (
     rawStatus === 'IN_PROGRESS' ||
@@ -228,14 +201,15 @@ export function useInterview() {
    * Start REAL backend interview.
    */
   const startInterview = async (agent = null) => {
-    const agentToUse =
-      agent ||
-      selectedAgent ||
-      {
+    let agentToUse = agent || selectedAgent
+
+    if (!agentToUse || agentToUse.disabled) {
+      agentToUse = {
         id: 'jarvis',
         name: 'JARVIS',
         tagline: 'Precision & Technical Correctness',
       }
+    }
 
     setSelectedAgent(agentToUse)
     setRawStatus('IN_PROGRESS')
