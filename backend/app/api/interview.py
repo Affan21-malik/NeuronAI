@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth import get_current_user_id
 from app.models.request import InterviewRequest
 from app.models.response import InterviewResponse
 from app.services.interview.engine import InterviewEngine
@@ -19,13 +20,14 @@ engine = InterviewEngine()
 )
 async def process_interview(
     request: InterviewRequest,
+    user_id: str | None = Depends(get_current_user_id),
 ) -> InterviewResponse:
     """
     Start or continue a technical interview.
     """
 
     try:
-        return await engine.process_turn(request)
+        return await engine.process_turn(request, user_id=user_id)
 
     except ValueError as exc:
         raise HTTPException(

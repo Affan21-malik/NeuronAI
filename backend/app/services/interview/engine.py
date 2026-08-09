@@ -30,9 +30,13 @@ from app.services.interview.prompt_loader import PromptLoader
 from app.services.interview.question_generator import (
     QuestionGenerator,
 )
-from app.services.llm.gemini import GeminiLLMProvider
+from app.services.db.supabase_db import (
+    save_interview_report,
+    save_interview_session,
+    save_interview_turn,
+)
+from app.services.llm import get_llm_provider
 from app.services.knowledge.mapper import KnowledgeMapper
-from app.services.llm.groq import GroqLLMProvider
 from app.services.memory.manager import MemoryManager
 from app.services.reports.generator import (
     FeedbackReport,
@@ -109,18 +113,7 @@ class InterviewEngine:
         # Shared infrastructure
         # ---------------------------------------------------------
 
-        provider = os.getenv("LLM_PROVIDER", "groq").lower()
-
-        if llm_provider is not None:
-            self.llm_provider = llm_provider
-        elif provider == "groq":
-            self.llm_provider = GroqLLMProvider()
-        elif provider == "gemini":
-            self.llm_provider = GeminiLLMProvider()
-        else:
-            raise ValueError(
-                f"Unsupported LLM provider: {provider}"
-            )
+        self.llm_provider = llm_provider or get_llm_provider()
 
         self.prompt_loader = PromptLoader()
 
@@ -238,6 +231,20 @@ class InterviewEngine:
             FeedbackReport,
         ] = {}
 
+    def set_llm_provider(self, llm_provider: BaseLLMProvider) -> None:
+        """
+        Dynamically update the LLM provider for the engine and all sub-agents.
+        """
+        self.llm_provider = llm_provider
+        if hasattr(self, "evaluator") and self.evaluator:
+            self.evaluator.llm_provider = llm_provider
+        if hasattr(self, "planner") and self.planner:
+            self.planner.llm_provider = llm_provider
+        if hasattr(self, "question_generator") and self.question_generator:
+            self.question_generator.llm_provider = llm_provider
+        if hasattr(self, "report_generator") and self.report_generator:
+            self.report_generator.llm_provider = llm_provider
+
     # =============================================================
     # PUBLIC ENTRY POINT
     # =============================================================
@@ -245,15 +252,18 @@ class InterviewEngine:
     async def process_turn(
         self,
         request: InterviewRequest,
+        user_id: str | None = None,
     ) -> InterviewResponse:
 
         if request.session_id is None:
             return await self._start_interview(
-                request
+                request,
+                user_id=user_id,
             )
 
         return await self._continue_interview(
-            request
+            request,
+            user_id=user_id,
         )
 
     # =============================================================
@@ -263,6 +273,7 @@ class InterviewEngine:
     async def _start_interview(
         self,
         request: InterviewRequest,
+        user_id: str | None = None,
     ) -> InterviewResponse:
 
         # ---------------------------------------------------------
@@ -440,6 +451,26 @@ class InterviewEngine:
             session.session_id
         )
 
+        save_interview_session(
+            session_id=session.session_id,
+            user_id=user_id,
+            candidate_id=request.candidate_id,
+            current_topic=topic,
+            difficulty=session.difficulty,
+            confidence_score=session.confidence_score,
+            current_question_index=1,
+            status="IN_PROGRESS",
+        )
+
+        save_interview_turn(
+            session_id=session.session_id,
+            turn_number=1,
+            question=question,
+            answer="",
+            topic=topic,
+            difficulty=session.difficulty,
+        )
+
         # ---------------------------------------------------------
         # 10. Return API response
         # ---------------------------------------------------------
@@ -462,6 +493,7 @@ class InterviewEngine:
     async def _continue_interview(
         self,
         request: InterviewRequest,
+        user_id: str | None = None,
     ) -> InterviewResponse:
 
         # ---------------------------------------------------------
@@ -825,6 +857,34 @@ class InterviewEngine:
             session
         )
 
+        eval_detail = self._to_response_evaluation(evaluation)
+        turn_num = len(session.turns) // 2
+
+        save_interview_session(
+            session_id=session.session_id,
+            user_id=user_id,
+            candidate_id=request.candidate_id,
+            current_topic=next_topic,
+            difficulty=session.difficulty,
+            confidence_score=session.confidence_score,
+            current_question_index=turn_num,
+            status="COMPLETED" if session.is_complete else "IN_PROGRESS",
+        )
+
+        save_interview_turn(
+            session_id=session.session_id,
+            turn_number=turn_num,
+            question=next_question,
+            answer=request.user_response,
+            topic=next_topic,
+            difficulty=session.difficulty,
+            score=eval_detail.score if eval_detail else None,
+            correctness=eval_detail.correctness if eval_detail else None,
+            depth=eval_detail.depth if eval_detail else None,
+            clarity=eval_detail.clarity if eval_detail else None,
+            evaluation=eval_detail.model_dump() if eval_detail else None,
+        )
+
         # ---------------------------------------------------------
         # 20. Return response
         # ---------------------------------------------------------
@@ -834,11 +894,7 @@ class InterviewEngine:
             next_question=next_question,
             current_topic=next_topic,
             difficulty=session.difficulty,
-            evaluation=(
-                self._to_response_evaluation(
-                    evaluation
-                )
-            ),
+            evaluation=eval_detail,
             knowledge_map=session.knowledge_map,
             confidence_score=(
                 session.confidence_score
@@ -908,6 +964,15 @@ class InterviewEngine:
             self._latest_reports[
                 session.session_id
             ] = report
+
+            if report:
+                save_interview_report(
+                    session_id=session.session_id,
+                    overall_score=report.overall_score,
+                    strengths=report.strengths,
+                    weaknesses=report.weaknesses,
+                    report=report.model_dump(),
+                )
 
         except Exception:
             # The interview itself must remain successfully

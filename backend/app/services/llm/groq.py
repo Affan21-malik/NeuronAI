@@ -25,18 +25,20 @@ class GroqLLMProvider(BaseLLMProvider):
         api_key: str | None = None,
     ) -> None:
         self.model = model
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        raw_key = api_key or os.getenv("GROQ_API_KEY")
 
-        if not self.api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY is not configured."
-            )
+        if not raw_key:
+            self.api_key = "mock_groq_key"
+            self._mock_mode = True
+        else:
+            self.api_key = raw_key
+            self._mock_mode = False
 
         self._client = Groq(api_key=self.api_key)
 
     @property
     def is_mock(self) -> bool:
-        return False
+        return self._mock_mode
 
     # =========================================================
     # TEXT GENERATION

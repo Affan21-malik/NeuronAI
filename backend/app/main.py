@@ -44,24 +44,3 @@ async def health_check() -> dict[str, str]:
         "status": "ok",
         "service": "neuronai",
     }
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(
-    interview_router,
-    prefix="/api",
-)
-
-
-@app.get("/health")
-async def health_check() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "neuronai",
-    }

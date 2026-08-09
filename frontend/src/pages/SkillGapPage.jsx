@@ -117,7 +117,7 @@ export default function SkillGapPage({ interviewStatus, onStartInterview }) {
                       className="text-indigo-400" 
                       fill="transparent"
                       strokeDasharray={351.8}
-                      strokeDashoffset={351.8 - (351.8 * skillGapData.readinessScore) / 100}
+                      strokeDashoffset={351.8 - (351.8 * (Number(skillGapData?.readinessScore) || 0)) / 100}
                       strokeLinecap="round"
                     />
                   </svg>

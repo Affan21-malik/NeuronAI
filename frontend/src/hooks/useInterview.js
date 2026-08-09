@@ -245,6 +245,7 @@ export function useInterview() {
       }
 
     setSelectedAgent(agentToUse)
+    setRawStatus('IN_PROGRESS')
     setIsAiThinking(true)
     setIsTimerRunning(false)
     setInputMessage('')

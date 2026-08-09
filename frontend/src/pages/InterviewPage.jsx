@@ -183,7 +183,7 @@ export default function InterviewPage({ interviewHook, onEndInterview }) {
                     className="text-emerald-400" 
                     fill="transparent"
                     strokeDasharray={81.6}
-                    strokeDashoffset={81.6 - (81.6 * confidenceScore) / 100}
+                    strokeDashoffset={81.6 - (81.6 * (Number(confidenceScore) || 0)) / 100}
                     strokeLinecap="round"
                   />
                 </svg>

@@ -107,7 +107,7 @@ export default function Sidebar({ activeTab, setActiveTab, onStartNewInterview, 
                   className="text-indigo-400" 
                   fill="transparent"
                   strokeDasharray={100.5}
-                  strokeDashoffset={100.5 - (100.5 * (candidate.readinessScore || 0)) / 100}
+                  strokeDashoffset={100.5 - (100.5 * (Number(candidate?.readinessScore) || 0)) / 100}
                   strokeLinecap="round"
                 />
               </svg>

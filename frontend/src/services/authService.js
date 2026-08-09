@@ -1,39 +1,4 @@
-/**
- * Client-Side Authentication Service Simulation for NeuronAI
- * 
- * Provides clean frontend abstraction with async Promise interface.
- * Easily replaceable by backend FastAPI endpoints (/api/v1/auth/*).
- */
-
-const STORAGE_KEYS = {
-  USER: 'neuron_ai_auth_user',
-  SESSION: 'neuron_ai_session',
-  PENDING_REGISTRATION: 'neuron_ai_pending_reg',
-  REGISTERED_USERS: 'neuron_ai_registered_users',
-  PROGRESS: 'neuron_ai_user_progress',
-}
-
-const AUTH_VERSION_KEY = 'neuron_ai_auth_version_v3'
-
-// Reset stale legacy test data once to ensure clean authentication state
-function checkAndClearLegacyAuthData() {
-  try {
-    const version = localStorage.getItem(AUTH_VERSION_KEY)
-    if (version !== 'v3') {
-      localStorage.removeItem(STORAGE_KEYS.USER)
-      localStorage.removeItem(STORAGE_KEYS.SESSION)
-      localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION)
-      localStorage.removeItem(STORAGE_KEYS.REGISTERED_USERS)
-      localStorage.removeItem(STORAGE_KEYS.PROGRESS)
-      localStorage.setItem(AUTH_VERSION_KEY, 'v3')
-    }
-  } catch (e) {}
-}
-
-checkAndClearLegacyAuthData()
-
-// Helper to simulate realistic backend network latency
-const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
+import { supabase } from '../lib/Supabase'
 
 // Email validation helper
 export const isValidEmail = (email) => {
@@ -42,9 +7,25 @@ export const isValidEmail = (email) => {
   return emailRegex.test(email.trim())
 }
 
-/**
- * Progressive Live Email Requirements & Guidance Checker
- */
+// Password requirements check helper
+export const checkPasswordRequirements = (password = '', confirmPassword = '') => {
+  const minLength = password.length >= 8
+  const hasUppercase = /[A-Z]/.test(password)
+  const hasLowercase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const matchesConfirm = Boolean(password) && password === confirmPassword
+  const isAllValid = minLength && hasUppercase && hasLowercase && hasNumber && matchesConfirm
+
+  return {
+    minLength,
+    hasUppercase,
+    hasLowercase,
+    hasNumber,
+    matchesConfirm,
+    isAllValid,
+  }
+}
+
 export const checkEmailRequirements = (email = '') => {
   if (!email || typeof email !== 'string') {
     return {
@@ -122,431 +103,285 @@ export const checkEmailRequirements = (email = '') => {
   }
 }
 
-// Password requirements check helper
-export const checkPasswordRequirements = (password = '', confirmPassword = '') => {
-  const minLength = password.length >= 8
-  const hasUppercase = /[A-Z]/.test(password)
-  const hasLowercase = /[a-z]/.test(password)
-  const hasNumber = /[0-9]/.test(password)
-  const matchesConfirm = Boolean(password) && password === confirmPassword
-
-  const isAllValid = minLength && hasUppercase && hasLowercase && hasNumber && matchesConfirm
-
-  return {
-    minLength,
-    hasUppercase,
-    hasLowercase,
-    hasNumber,
-    matchesConfirm,
-    isAllValid,
-  }
-}
-
-// Dynamic username generator from full name
 export const generateSuggestedUsername = (fullName = '') => {
   if (!fullName || typeof fullName !== 'string') return 'candidate_ai'
   const cleaned = fullName
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s_]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, '_')
-  
-  if (!cleaned) return 'candidate_ai'
-  return cleaned.slice(0, 20)
+  return cleaned ? `${cleaned}_dev` : 'candidate_dev'
 }
 
-// Username validator
 export const validateUsername = (username = '') => {
-  const cleaned = username.trim()
-  if (!cleaned) return { isValid: false, message: 'Username is required' }
-  if (cleaned.length < 3) return { isValid: false, message: 'Minimum 3 characters required' }
-  if (cleaned.length > 20) return { isValid: false, message: 'Maximum 20 characters allowed' }
-  if (/\s/.test(cleaned)) return { isValid: false, message: 'Spaces are not allowed' }
-  if (!/^[a-zA-Z0-9_]+$/.test(cleaned)) return { isValid: false, message: 'Only letters, numbers, and underscores allowed' }
-  
-  const takenUsernames = ['admin', 'root', 'neuron', 'neuronai', 'support', 'taken']
-  if (takenUsernames.includes(cleaned.toLowerCase())) {
-    return { isValid: false, isTaken: true, message: 'Username already taken' }
+  if (!username || typeof username !== 'string') {
+    return { isValid: false, message: 'Username cannot be empty' }
   }
+  const trimmed = username.trim().replace(/^@/, '')
+  if (trimmed.length < 3) {
+    return { isValid: false, message: 'Username must be at least 3 characters' }
+  }
+  if (trimmed.length > 30) {
+    return { isValid: false, message: 'Username must be 30 characters or less' }
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+    return { isValid: false, message: 'Username can only contain letters, numbers, and underscores' }
+  }
+  return { isValid: true, message: 'Username is available' }
+}
 
-  return { isValid: true, isTaken: false, message: 'Username available' }
+export function formatSupabaseUser(sbUser, profileData = {}) {
+  if (!sbUser) return null
+  const meta = sbUser.user_metadata || {}
+  const fullName = profileData.full_name || meta.full_name || meta.name || sbUser.email?.split('@')[0] || 'Candidate'
+  const username = meta.username || profileData.username || sbUser.email?.split('@')[0] || 'candidate'
+
+  return {
+    id: sbUser.id,
+    email: sbUser.email,
+    fullName: fullName,
+    username: username,
+    firstName: fullName.split(' ')[0] || '',
+    lastName: fullName.split(' ').slice(1).join(' ') || '',
+    role: 'Candidate',
+    avatar: meta.avatar_url || profileData.avatar || null,
+    hasCompletedOnboarding: meta.hasCompletedOnboarding ?? true,
+    isNewUser: meta.isNewUser ?? false,
+    createdAt: sbUser.created_at,
+  }
 }
 
 export const authService = {
-  /**
-   * Get currently authenticated user from localStorage
-   */
-  getCurrentUser() {
+  async getCurrentUser() {
     try {
-      const userRaw = localStorage.getItem(STORAGE_KEYS.USER)
-      if (!userRaw) return null
-      return JSON.parse(userRaw)
-    } catch (e) {
-      console.error('Failed to parse authenticated user:', e)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      let profileData = {}
+      try {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+        if (data) profileData = data
+      } catch {
+        // Fallback to metadata
+      }
+
+      return formatSupabaseUser(user, profileData)
+    } catch {
       return null
     }
   },
 
-  /**
-   * Check if user has active session
-   */
-  isAuthenticated() {
-    return Boolean(this.getCurrentUser() && localStorage.getItem(STORAGE_KEYS.SESSION))
+  async isAuthenticated() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      return Boolean(session)
+    } catch {
+      return false
+    }
   },
 
-  /**
-   * Step 1: Sign Up Registration Submission
-   */
+  async getSession() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session
+  },
+
   async signUp({ firstName, lastName, email, password, confirmPassword }) {
-    await delay(500)
-
-    if (!firstName || !firstName.trim()) {
-      throw new Error('First Name is required.')
+    if (confirmPassword && password !== confirmPassword) {
+      throw new Error('Passwords do not match.')
     }
 
-    if (!lastName || !lastName.trim()) {
-      throw new Error('Last Name is required.')
-    }
-
-    if (!isValidEmail(email)) {
-      throw new Error('Please enter a valid email address.')
-    }
-
-    const pwCheck = checkPasswordRequirements(password, confirmPassword)
-    if (!pwCheck.isAllValid) {
-      throw new Error('Please satisfy all password requirements.')
-    }
-
-    const trimmedFirst = firstName.trim()
-    const trimmedLast = lastName.trim()
-    const fullName = `${trimmedFirst} ${trimmedLast}`.trim()
-    const cleanEmail = email.trim().toLowerCase()
-
-    // Check if email already registered
-    try {
-      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-      const registered = regRaw ? JSON.parse(regRaw) : []
-      const existing = registered.find((u) => u.email.toLowerCase() === cleanEmail)
-      if (existing) {
-        throw new Error('An account with this email address already exists. Please sign in.')
-      }
-    } catch (e) {
-      if (e.message && e.message.includes('already exists')) throw e
-    }
-
-    const pendingData = {
-      firstName: trimmedFirst,
-      lastName: trimmedLast,
-      fullName,
-      email: cleanEmail,
+    const fullName = `${firstName || ''} ${lastName || ''}`.trim() || 'Candidate'
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
       password,
-      suggestedUsername: generateSuggestedUsername(fullName),
-      createdAt: new Date().toISOString(),
-    }
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    })
 
-    localStorage.setItem(STORAGE_KEYS.PENDING_REGISTRATION, JSON.stringify(pendingData))
+    if (error) throw new Error(error.message)
 
-    return {
-      success: true,
-      message: 'Verification code sent to your email.',
-      email: pendingData.email,
-    }
-  },
-
-  /**
-   * Step 2: Verify Email OTP Code
-   */
-  async verifyEmailOtp(email, otp) {
-    await delay(400)
-
-    if (!otp || otp.trim().length !== 6 || !/^\d+$/.test(otp.trim())) {
-      throw new Error('Invalid verification code. Please enter 6 digits.')
-    }
-
-    const pendingRaw = localStorage.getItem(STORAGE_KEYS.PENDING_REGISTRATION)
-    let pendingData = null
-    if (pendingRaw) {
-      pendingData = JSON.parse(pendingRaw)
+    const user = data.user
+    if (user) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: fullName,
+        })
+      } catch (err) {
+        console.error('Failed to create user profile:', err)
+      }
     }
 
     return {
-      success: true,
-      message: 'Email verified successfully.',
-      suggestedUsername: pendingData ? pendingData.suggestedUsername : generateSuggestedUsername((email || '').split('@')[0]),
+      user: user ? formatSupabaseUser(user, { full_name: fullName }) : null,
+      session: data.session,
+      email: email.trim(),
+      message: 'Account created successfully.',
     }
   },
 
-  /**
-   * Resend Email OTP Code
-   */
-  async resendEmailOtp(email) {
-    await delay(400)
-    return {
-      success: true,
-      message: 'A new 6-digit verification code has been sent.',
-    }
-  },
-
-  /**
-   * Step 3: Complete Profile Setup (Username + Optional Profile Photo) & Create Final User Session
-   */
-  async setupProfile({ username, profilePhoto }) {
-    await delay(400)
-
-    const check = validateUsername(username)
-    if (!check.isValid) {
-      throw new Error(check.message)
-    }
-
-    const pendingRaw = localStorage.getItem(STORAGE_KEYS.PENDING_REGISTRATION)
-    const pendingData = pendingRaw ? JSON.parse(pendingRaw) : null
-
-    if (!pendingData || !pendingData.email) {
-      throw new Error('Registration session missing or expired. Please sign up again.')
-    }
-
-    const fName = pendingData.firstName || ''
-    const lName = pendingData.lastName || ''
-    const fullN = pendingData.fullName || `${fName} ${lName}`.trim() || pendingData.email.split('@')[0]
-
-    const user = {
-      id: `usr-${Date.now()}`,
-      firstName: fName,
-      lastName: lName,
-      fullName: fullN,
-      email: pendingData.email,
-      password: pendingData.password,
-      username: username.trim(),
-      profilePhoto: profilePhoto || null,
-      targetRole: 'AI Systems Engineer',
-      createdAt: pendingData.createdAt || new Date().toISOString(),
-      isNewUser: true,
-      hasCompletedOnboarding: false,
-    }
-
-    // Persist session & update registered users store
-    try {
-      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-      const registered = regRaw ? JSON.parse(regRaw) : []
-      const filtered = registered.filter((u) => u.email.toLowerCase() !== user.email.toLowerCase())
-      filtered.push(user)
-      localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(filtered))
-    } catch (e) {}
-
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
-    localStorage.setItem(STORAGE_KEYS.SESSION, `session_${Date.now()}`)
-    localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION)
-
-    return {
-      success: true,
-      user,
-      message: 'Profile setup completed successfully!',
-    }
-  },
-
-  /**
-   * Backwards compatible setupUsername wrapper
-   */
-  async setupUsername(username, profilePhoto = null) {
-    return this.setupProfile({ username, profilePhoto })
-  },
-
-  /**
-   * Sign In with Email & Password (Strict Credential Verification)
-   */
   async signIn({ email, password }) {
-    await delay(400)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
 
-    const cleanEmail = (email || '').trim().toLowerCase()
-    const cleanPassword = (password || '').trim()
+    if (error) throw new Error(error.message)
 
-    if (!cleanEmail || !cleanPassword) {
-      throw new Error('Please enter both email and password.')
+    const user = data.user
+    let fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Candidate'
+
+    try {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+      if (profile?.full_name) {
+        fullName = profile.full_name
+      } else {
+        await supabase.from('profiles').upsert({ id: user.id, full_name: fullName })
+      }
+    } catch {
+      // Ignore profile lookup error
     }
-
-    if (!isValidEmail(cleanEmail)) {
-      throw new Error('Please enter a valid email address.')
-    }
-
-    // Lookup user in registered users store in localStorage
-    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-    const registered = regRaw ? JSON.parse(regRaw) : []
-    const registeredAccount = registered.find((u) => u.email.toLowerCase() === cleanEmail)
-
-    // Rule 1: If email is NOT registered -> reject login
-    if (!registeredAccount) {
-      throw new Error('Account not registered. Please sign up first.')
-    }
-
-    // Rule 2: If email exists but password does NOT match -> reject login
-    if (registeredAccount.password && registeredAccount.password !== cleanPassword) {
-      throw new Error('Incorrect email or password.')
-    }
-
-    // Rule 3: If email AND password match -> Sign In successful!
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(registeredAccount))
-    localStorage.setItem(STORAGE_KEYS.SESSION, `session_${Date.now()}`)
 
     return {
-      success: true,
-      user: registeredAccount,
-      message: 'Signed in successfully.',
+      user: formatSupabaseUser(user, { full_name: fullName }),
+      session: data.session,
     }
   },
 
-  /**
-   * Continue with Google OAuth Integration Point
-   */
+  async verifyEmailOtp(email, otp) {
+    return {
+      success: true,
+      suggestedUsername: generateSuggestedUsername(email),
+    }
+  },
+
+  async resendEmailOtp(email) {
+    return {
+      success: true,
+      message: 'Verification code resent.',
+    }
+  },
+
+  async setupProfile({ username, profilePhoto }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user found.')
+
+    await supabase.auth.updateUser({
+      data: {
+        username,
+        avatar_url: profilePhoto,
+      },
+    })
+
+    return {
+      user: formatSupabaseUser(user, { username }),
+    }
+  },
+
+  async completeOnboarding() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.auth.updateUser({
+        data: { hasCompletedOnboarding: true },
+      })
+      return formatSupabaseUser(user)
+    }
+    return null
+  },
+
   async continueWithGoogle() {
-    await delay(300)
-
-    console.info('[AuthService] continueWithGoogle invoked. Backend Google OAuth integration pending.')
-
-    return {
-      success: false,
-      requiresBackendOAuth: true,
-      message: 'Google Sign-In will be available once backend OAuth is connected.',
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
+      })
+      if (error) {
+        if (
+          error.message?.toLowerCase().includes('provider is not enabled') ||
+          error.message?.toLowerCase().includes('validation_failed') ||
+          error.code === 'validation_failed' ||
+          error.status === 400
+        ) {
+          throw new Error(
+            'Google Sign-In provider is not enabled in your Supabase project. To enable Google authentication, go to your Supabase Dashboard -> Authentication -> Providers -> Google, enable it, and enter your Google OAuth Client ID & Secret.'
+          )
+        }
+        throw new Error(error.message || 'Google authentication failed.')
+      }
+      return { success: true, data }
+    } catch (err) {
+      if (
+        err.message?.toLowerCase().includes('provider is not enabled') ||
+        err.message?.toLowerCase().includes('validation_failed')
+      ) {
+        throw new Error(
+          'Google Sign-In provider is not enabled in your Supabase project. To enable Google authentication, go to your Supabase Dashboard -> Authentication -> Providers -> Google, enable it, and enter your Google OAuth Client ID & Secret.'
+        )
+      }
+      throw err
     }
   },
 
-  async googleAuth() {
-    return this.continueWithGoogle()
-  },
-
-  /**
-   * Forgot Password Flow - Step 1: Request OTP
-   */
   async forgotPassword(email) {
-    await delay(400)
-
-    if (!isValidEmail(email)) {
-      throw new Error('Please enter a valid email address.')
-    }
-
-    const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-    const registered = regRaw ? JSON.parse(regRaw) : []
-    const account = registered.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-
-    if (!account) {
-      throw new Error('Account not registered.')
-    }
-
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth`,
+    })
+    if (error) throw new Error(error.message)
     return {
       success: true,
-      email: email.trim().toLowerCase(),
-      message: 'Password reset code sent to your email.',
+      email: email.trim(),
+      message: 'Password reset link sent to your email address.',
     }
   },
 
-  /**
-   * Forgot Password Flow - Step 2: Verify OTP
-   */
   async verifyResetOtp(email, otp) {
-    await delay(400)
-
-    if (!otp || otp.trim().length !== 6 || !/^\d+$/.test(otp.trim())) {
-      throw new Error('Invalid verification code. Please enter 6 digits.')
-    }
-
     return {
       success: true,
       message: 'Reset code verified.',
     }
   },
 
-  /**
-   * Forgot Password Flow - Step 3: Set New Password
-   */
   async resetPassword(email, newPassword, confirmPassword) {
-    await delay(500)
-
-    const pwCheck = checkPasswordRequirements(newPassword, confirmPassword)
-    if (!pwCheck.isAllValid) {
-      throw new Error('Please complete all password requirements.')
+    if (confirmPassword && newPassword !== confirmPassword) {
+      throw new Error('Passwords do not match.')
     }
-
-    // Update password in REGISTERED_USERS store
-    try {
-      const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-      if (regRaw) {
-        const registered = JSON.parse(regRaw)
-        const idx = registered.findIndex((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-        if (idx !== -1) {
-          registered[idx].password = newPassword
-          localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
-        }
-      }
-    } catch (e) {}
-
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+    if (error) throw new Error(error.message)
     return {
       success: true,
       message: 'Password updated successfully. You can now sign in.',
     }
   },
 
-  /**
-   * Finish Onboarding
-   */
-  async completeOnboarding() {
-    const currentUser = this.getCurrentUser()
-    if (currentUser) {
-      const updated = { ...currentUser, hasCompletedOnboarding: true }
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
-
-      try {
-        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-        if (regRaw) {
-          const registered = JSON.parse(regRaw)
-          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
-          if (idx !== -1) {
-            registered[idx] = { ...registered[idx], ...updated }
-            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
-          }
-        }
-      } catch (e) {}
-
-      return updated
-    }
-    return null
-  },
-
-  /**
-   * Update Profile data
-   */
   async updateProfile(updates) {
-    const currentUser = this.getCurrentUser()
-    if (currentUser) {
-      const updated = { ...currentUser, ...updates }
-      
-      // 1. Update active session user in localStorage
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated))
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user found.')
 
-      // 2. Sync changes into persistent REGISTERED_USERS array in localStorage
-      try {
-        const regRaw = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS)
-        if (regRaw) {
-          const registered = JSON.parse(regRaw)
-          const idx = registered.findIndex((u) => u.email.toLowerCase() === updated.email.toLowerCase())
-          if (idx !== -1) {
-            registered[idx] = { ...registered[idx], ...updated }
-            localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registered))
-          }
-        }
-      } catch (e) {
-        console.error('Failed to sync updated profile to registered users store:', e)
-      }
-
-      return updated
+    if (updates.fullName) {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: updates.fullName,
+      })
+      await supabase.auth.updateUser({
+        data: { full_name: updates.fullName },
+      })
     }
-    return null
+
+    const updatedUser = await this.getCurrentUser()
+    return updatedUser
   },
 
-  /**
-   * Sign Out / Logout
-   */
-  logout() {
-    localStorage.removeItem(STORAGE_KEYS.USER)
-    localStorage.removeItem(STORAGE_KEYS.SESSION)
-    localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION)
+  async logout() {
+    await supabase.auth.signOut()
   },
 }

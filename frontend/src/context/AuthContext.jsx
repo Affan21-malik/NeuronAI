@@ -1,35 +1,64 @@
 import React, { createContext, useState, useEffect } from 'react'
 import { authService } from '../services/authService'
 
+import { supabase } from '../lib/Supabase'
+
 export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [authStep, setAuthStep] = useState('SIGN_IN') // SIGN_IN | SIGN_UP | EMAIL_OTP | USERNAME_SETUP | WELCOME | FORGOT_PASSWORD_EMAIL | FORGOT_PASSWORD_OTP | FORGOT_PASSWORD_NEW
+  const [authStep, setAuthStep] = useState('SIGN_IN')
   const [pendingEmail, setPendingEmail] = useState('')
   const [suggestedUsername, setSuggestedUsername] = useState('')
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
 
-  // Initialize Auth State from localStorage
+  // Initialize Auth State from Supabase & Subscribe to changes
   useEffect(() => {
-    try {
-      const storedUser = authService.getCurrentUser()
-      if (storedUser && authService.isAuthenticated()) {
-        setUser(storedUser)
-        setIsAuthenticated(true)
-        if (!storedUser.hasCompletedOnboarding && storedUser.isNewUser) {
-          setAuthStep('WELCOME')
-        } else {
-          setAuthStep('DASHBOARD')
+    let mounted = true
+
+    async function initAuth() {
+      try {
+        const storedUser = await authService.getCurrentUser()
+        if (mounted && storedUser) {
+          setUser(storedUser)
+          setIsAuthenticated(true)
+          if (!storedUser.hasCompletedOnboarding && storedUser.isNewUser) {
+            setAuthStep('WELCOME')
+          } else {
+            setAuthStep('DASHBOARD')
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+
+    initAuth()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const updatedUser = await authService.getCurrentUser()
+        if (mounted) {
+          setUser(updatedUser)
+          setIsAuthenticated(true)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setUser(null)
+          setIsAuthenticated(false)
+          setAuthStep('SIGN_IN')
         }
       }
-    } catch (err) {
-      console.error('Auth initialization error:', err)
-    } finally {
-      setIsLoading(false)
+    })
+
+    return () => {
+      mounted = false
+      authListener?.subscription?.unsubscribe()
     }
   }, [])
 
@@ -158,21 +187,19 @@ export function AuthProvider({ children }) {
     try {
       setIsLoading(true)
       const res = await authService.continueWithGoogle()
-      if (res?.success && res?.user) {
-        setUser(res.user)
-        setIsAuthenticated(true)
-        setSuccessMessage(res.message)
-        if (!res.user.hasCompletedOnboarding) {
-          setAuthStep('WELCOME')
+      if (res?.success) {
+        if (res.user) {
+          setUser(res.user)
+          setIsAuthenticated(true)
+          if (!res.user.hasCompletedOnboarding) {
+            setAuthStep('WELCOME')
+          }
         }
-        return res
-      } else {
-        setError(res?.message || 'Google Sign-In requires backend OAuth configuration.')
         return res
       }
     } catch (err) {
       setError(err.message || 'Google authentication failed.')
-      throw err
+      return { success: false, message: err.message }
     } finally {
       setIsLoading(false)
     }
