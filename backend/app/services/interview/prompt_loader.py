@@ -169,7 +169,8 @@ class PromptLoader:
 
         persona_files = {
             "jarvis": "Jarvis.md",
-            
+            "friday": "Friday.md",
+            "ultron": "Ultron.md",
         }
 
         persona_key = persona.strip().lower()

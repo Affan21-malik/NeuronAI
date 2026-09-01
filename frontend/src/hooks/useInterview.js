@@ -247,7 +247,7 @@ export function useInterview() {
     let activeSessionId = null
 
     try {
-      const response = await startInterviewApi(DEFAULT_CANDIDATE_ID)
+      const response = await startInterviewApi(DEFAULT_CANDIDATE_ID, agentToUse.id)
 
       activeSessionId = response.session_id
       setBackendSessionId(response.session_id)
@@ -388,29 +388,28 @@ export function useInterview() {
         sessionId: currentSessionId,
         candidateId: DEFAULT_CANDIDATE_ID,
         userResponse: textToSend,
+        agentId: selectedAgent?.id || 'jarvis',
       })
 
       /*
-       * Record evaluation score for current question or follow-up.
+       * Record evaluation score for current main question (including follow-ups).
        */
       const evaluatedQuestionNum = currentQuestionIndex
-      const wasFollowUp = isFollowUpActive
       let turnScore = 0
 
       if (response.evaluation) {
         turnScore = Math.round(Number(response.evaluation.score) || 0)
+        const qKey = `Q${evaluatedQuestionNum}`
 
-        const scoreLabel = wasFollowUp
-          ? `Q${evaluatedQuestionNum} Follow-up`
-          : `Q${evaluatedQuestionNum}`
-
-        setQuestionScores((prev) => [
-          ...prev,
-          {
-            question: scoreLabel,
-            score: turnScore,
-          },
-        ])
+        setQuestionScores((prev) => {
+          const existingIdx = prev.findIndex((item) => item.question === qKey)
+          if (existingIdx >= 0) {
+            const updated = [...prev]
+            updated[existingIdx] = { question: qKey, score: turnScore }
+            return updated
+          }
+          return [...prev, { question: qKey, score: turnScore }]
+        })
       }
 
       /*

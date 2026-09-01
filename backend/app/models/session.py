@@ -24,6 +24,9 @@ class InterviewSession(BaseModel):
     session_id: str
     candidate_id: str
 
+    agent_id: str = "jarvis"
+    is_current_question_followup: bool = False
+
     current_topic: str | None = None
     current_subtopic: str | None = None
     difficulty: str = "medium"

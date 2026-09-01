@@ -50,11 +50,12 @@ async function request(url, options = {}) {
   return response.json()
 }
 
-export async function startInterview(candidateId) {
+export async function startInterview(candidateId, agentId = 'jarvis') {
   return request(`${API_BASE_URL}/api/interview`, {
     method: 'POST',
     body: JSON.stringify({
       candidate_id: candidateId,
+      agent_id: agentId,
     }),
   })
 }
@@ -63,6 +64,7 @@ export async function submitInterviewAnswer({
   sessionId,
   candidateId,
   userResponse,
+  agentId = 'jarvis',
 }) {
   return request(`${API_BASE_URL}/api/interview`, {
     method: 'POST',
@@ -70,6 +72,7 @@ export async function submitInterviewAnswer({
       session_id: sessionId,
       candidate_id: candidateId,
       user_response: userResponse,
+      agent_id: agentId,
     }),
   })
 }

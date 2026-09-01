@@ -17,3 +17,8 @@ class InterviewRequest(BaseModel):
         default=None,
         description="Candidate's answer to the previous question"
     )
+
+    agent_id: str | None = Field(
+        default="jarvis",
+        description="Selected AI Interviewer persona ID (jarvis, friday, ultron)"
+    )

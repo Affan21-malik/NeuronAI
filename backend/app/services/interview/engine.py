@@ -280,9 +280,12 @@ class InterviewEngine:
         # 1. Create session
         # ---------------------------------------------------------
 
+        agent_id = (request.agent_id or "jarvis").strip().lower()
+
         session = InterviewSession(
             session_id=str(uuid4()),
             candidate_id=request.candidate_id,
+            agent_id=agent_id,
             difficulty="medium",
             max_questions=10,
         )
@@ -426,6 +429,7 @@ class InterviewEngine:
                 evaluator_output="",
                 conversation_history="",
                 interview_state=interview_state,
+                persona=agent_id,
             )
         )
 
@@ -475,13 +479,25 @@ class InterviewEngine:
         # 10. Return API response
         # ---------------------------------------------------------
 
-        jarvis_introduction = (
-            "Hello, I am JARVIS, your AI technical interviewer. "
-            "I'll adapt this interview based on your responses and "
-            "demonstrated understanding. Let's begin."
-        )
+        if agent_id == "friday":
+            agent_intro = (
+                "Hello, I am FRIDAY, your adaptive AI technical interviewer. "
+                "I'll listen closely to your reasoning, context, and explanations as we explore technical concepts together. Let's begin."
+            )
+        elif agent_id == "ultron":
+            agent_intro = (
+                "Hello, I am ULTRON, your technical challenge interviewer. "
+                "I will analyze your architectural decisions, probe into edge cases, and test the limits of your solutions. Let's begin."
+            )
+        else:
+            agent_intro = (
+                "Hello, I am JARVIS, your AI technical interviewer. "
+                "I'll adapt this interview based on your responses and "
+                "demonstrated understanding. Let's begin."
+            )
+
         candidate_facing_message = (
-            f"{jarvis_introduction}\n\n"
+            f"{agent_intro}\n\n"
             f"{question}"
         )
 
@@ -704,6 +720,40 @@ class InterviewEngine:
         # 13. Completion check
         # ---------------------------------------------------------
 
+        if request.agent_id and hasattr(session, "agent_id"):
+            session.agent_id = request.agent_id.strip().lower()
+
+        # ---------------------------------------------------------
+        # 13. Determine follow-up & update question count
+        #
+        # Maximum ONE follow-up per main question.
+        # If current question was already a follow-up, force new topic
+        # and increment main questions answered.
+        # ---------------------------------------------------------
+
+        was_already_followup = getattr(session, "is_current_question_followup", False)
+
+        if was_already_followup:
+            is_followup = False
+            session.is_current_question_followup = False
+            session.questions_answered += 1
+        else:
+            decision = self.followup_engine.decide(
+                evaluation=evaluation,
+                followup_attempts=0,
+            )
+            if decision.action == FollowupAction.INTELLIGENT_FOLLOWUP:
+                is_followup = True
+                session.is_current_question_followup = True
+            else:
+                is_followup = False
+                session.is_current_question_followup = False
+                session.questions_answered += 1
+
+        # ---------------------------------------------------------
+        # 14. Completion check (10 Main Questions)
+        # ---------------------------------------------------------
+
         if (
             session.questions_answered
             >= session.max_questions
@@ -714,31 +764,6 @@ class InterviewEngine:
                 evaluation=evaluation,
                 planner_output=planner_output,
             )
-
-        # ---------------------------------------------------------
-        # 14. Determine follow-up
-        # ---------------------------------------------------------
-
-        followup_attempts = (
-            self._current_topic_question_count(
-                session,
-                current_topic,
-            )
-        )
-
-        decision = (
-            self.followup_engine.decide(
-                evaluation=evaluation,
-                followup_attempts=(
-                    followup_attempts
-                ),
-            )
-        )
-
-        is_followup = (
-            decision.action
-            == FollowupAction.INTELLIGENT_FOLLOWUP
-        )
 
         # ---------------------------------------------------------
         # 15. Select next topic
@@ -792,7 +817,7 @@ class InterviewEngine:
         )
 
         # ---------------------------------------------------------
-        # 17. JARVIS gets evaluator evidence
+        # 17. Evaluator evidence for interviewer prompt
         # ---------------------------------------------------------
 
         evaluator_output = (
@@ -808,7 +833,7 @@ class InterviewEngine:
         )
 
         # ---------------------------------------------------------
-        # 18. Generate next JARVIS question
+        # 18. Generate next question using selected persona
         # ---------------------------------------------------------
 
         next_question = (
@@ -836,6 +861,7 @@ class InterviewEngine:
                 interview_state=(
                     interview_state
                 ),
+                persona=session.agent_id,
             )
         )
 
@@ -1135,14 +1161,16 @@ class InterviewEngine:
     @staticmethod
     def _build_conversation_history(
         session: InterviewSession,
+        max_turns: int = 6,
     ) -> str:
 
         if not session.turns:
             return ""
 
+        turns_to_use = session.turns[-max_turns:] if len(session.turns) > max_turns else session.turns
         lines: list[str] = []
 
-        for turn in session.turns:
+        for turn in turns_to_use:
 
             role = (
                 "Interviewer"

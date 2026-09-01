@@ -9,6 +9,8 @@ ACTIVE_PERSONA = os.getenv(
 
 SUPPORTED_PERSONAS = {
     "jarvis",
+    "friday",
+    "ultron",
 }
 
 

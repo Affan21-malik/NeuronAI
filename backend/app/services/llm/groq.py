@@ -75,6 +75,15 @@ class GroqLLMProvider(BaseLLMProvider):
             return text.strip()
 
         except Exception as exc:
+            gemini_key = os.getenv("GEMINI_API_KEY")
+            if gemini_key and gemini_key.strip():
+                try:
+                    logger.info("Groq API failed, attempting Gemini provider fallback...")
+                    gemini_provider = GeminiLLMProvider(api_key=gemini_key)
+                    return await gemini_provider.generate_text(prompt)
+                except Exception as gemini_exc:
+                    logger.warning(f"Gemini fallback also failed ({gemini_exc}). Falling back to mock response.")
+
             logger.warning(f"Groq text generation API failed ({exc}), falling back to mock provider.")
             return GeminiLLMProvider._mock_text_response(prompt)
 
@@ -139,6 +148,15 @@ class GroqLLMProvider(BaseLLMProvider):
                 ) from exc
 
         except Exception as exc:
+            gemini_key = os.getenv("GEMINI_API_KEY")
+            if gemini_key and gemini_key.strip():
+                try:
+                    logger.info("Groq API failed, attempting Gemini provider fallback for structured output...")
+                    gemini_provider = GeminiLLMProvider(api_key=gemini_key)
+                    return await gemini_provider.generate_structured(prompt, response_model)
+                except Exception as gemini_exc:
+                    logger.warning(f"Gemini fallback also failed ({gemini_exc}). Falling back to mock response.")
+
             logger.warning(
                 f"Groq structured generation API failed ({exc}), falling back to mock provider."
             )

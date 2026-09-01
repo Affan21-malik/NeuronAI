@@ -52,6 +52,7 @@ class QuestionGenerator:
         evaluator_output: str = "",
         conversation_history: str = "",
         interview_state: str = "",
+        persona: str | None = None,
     ) -> str:
 
         if not topic.strip():
@@ -80,6 +81,7 @@ class QuestionGenerator:
             evaluator_output=evaluator_output,
             conversation_history=conversation_history,
             interview_state=interview_state,
+            persona=persona,
         )
 
         question = await self.llm_provider.generate_text(
@@ -105,10 +107,13 @@ class QuestionGenerator:
         evaluator_output: str = "",
         conversation_history: str = "",
         interview_state: str = "",
+        persona: str | None = None,
     ) -> str:
 
+        active_persona = persona or self.persona
+
         prompt = self.prompt_loader.get_interviewer_prompt(
-            persona=self.persona,
+            persona=active_persona,
             topic=topic,
             difficulty=difficulty,
             context=context,

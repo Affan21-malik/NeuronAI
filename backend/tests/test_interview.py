@@ -364,3 +364,63 @@ def test_max_one_followup_limit(setup_mock_provider: MockTestLLMProvider):
     assert eval2["current_topic"] != topic1
 
 
+def test_all_three_personas_selectable():
+    """Verify JARVIS, FRIDAY, and ULTRON personas return correct greetings."""
+    # Test JARVIS
+    res_jarvis = client.post(
+        INTERVIEW_ENDPOINT,
+        json={"candidate_id": "CAND-001", "agent_id": "jarvis"},
+    )
+    assert res_jarvis.status_code == 200
+    data_jarvis = res_jarvis.json()
+    assert "JARVIS" in data_jarvis["next_question"]
+
+    # Test FRIDAY
+    res_friday = client.post(
+        INTERVIEW_ENDPOINT,
+        json={"candidate_id": "CAND-001", "agent_id": "friday"},
+    )
+    assert res_friday.status_code == 200
+    data_friday = res_friday.json()
+    assert "FRIDAY" in data_friday["next_question"]
+
+    # Test ULTRON
+    res_ultron = client.post(
+        INTERVIEW_ENDPOINT,
+        json={"candidate_id": "CAND-001", "agent_id": "ultron"},
+    )
+    assert res_ultron.status_code == 200
+    data_ultron = res_ultron.json()
+    assert "ULTRON" in data_ultron["next_question"]
+
+
+def test_ten_question_completion_flow():
+    """Verify an interview session completes after 10 main questions."""
+    # Start interview
+    res = client.post(
+        INTERVIEW_ENDPOINT,
+        json={"candidate_id": "CAND-001", "agent_id": "friday"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    session_id = data["session_id"]
+
+    # Loop 10 main turns
+    for turn in range(10):
+        res = client.post(
+            INTERVIEW_ENDPOINT,
+            json={
+                "session_id": session_id,
+                "candidate_id": "CAND-001",
+                "user_response": f"This is candidate technical response for question {turn + 1}.",
+                "agent_id": "friday",
+            },
+        )
+        assert res.status_code == 200
+        data = res.json()
+
+    # After 10 main questions answered, interview should be complete
+    assert data["is_complete"] is True
+
+
+
